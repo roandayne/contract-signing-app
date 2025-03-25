@@ -13,4 +13,10 @@ Rails.application.routes.draw do
   # root "posts#index"
 
   get '/health', to: 'health#show'
+
+  namespace :api do
+    namespace :v1 do
+      resources :users
+    end
+  end
 end
