@@ -8,7 +8,7 @@
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-FROM ruby:3.3-slim
+FROM ruby:3.3.0
 
 # Install system dependencies
 RUN apt-get update -qq && \
@@ -25,11 +25,11 @@ RUN apt-get update -qq && \
 
 WORKDIR /app
 
-# Set environment
-ENV RAILS_ENV="production" \
+# Set development environment
+ENV RAILS_ENV="development" \
     BUNDLE_PATH="/usr/local/bundle"
 
-# Install Rails dependencies
+# Copy Gemfile and install dependencies
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
@@ -40,15 +40,13 @@ COPY . .
 COPY entrypoint.sh /usr/bin/
 RUN chmod +x /usr/bin/entrypoint.sh
 
-# Setup non-root user
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
-    chown -R rails:rails db log storage tmp
-USER 1000:1000
+# Create directories and set permissions
+RUN mkdir -p tmp/pids log storage && \
+    chmod -R 777 tmp log storage
 
-# Expose the production port
-EXPOSE 80
+# Expose port 3000
+EXPOSE 3000
 
 # Set the entrypoint and default command
 ENTRYPOINT ["/usr/bin/entrypoint.sh"]
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
