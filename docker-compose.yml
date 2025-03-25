@@ -31,6 +31,8 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/contract_signing_app
       RAILS_ENV: development
+      SMTP_ADDRESS: mailcatcher
+      SMTP_PORT: 1025
     volumes:
       - ./server:/app
       - bundle_cache:/usr/local/bundle
@@ -57,6 +59,14 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:3000
+    networks:
+      - app_network
+  
+  mailcatcher:
+    image: tophfr/mailcatcher
+    ports:
+      - "1080:1080"
+      - "1025:1025"
     networks:
       - app_network
 

@@ -16,7 +16,14 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :users
+      resources :users do
+        collection do
+          get 'validate_email'
+        end
+      end
+      post '/login', to: 'users#login'
+      post '/register', to: 'users#register'
+      delete '/logout', to: 'users#logout'
     end
   end
 end
