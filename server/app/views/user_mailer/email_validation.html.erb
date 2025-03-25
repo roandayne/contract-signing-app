@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>Welcome!</h1>
+    <p>
+      Hi <%= @user.email %>,
+    </p>
+    <p>
+      Please validate your email address by clicking the link below:
+    </p>
+    <p>
+      <%= link_to 'Validate Email', @validation_url %>
+    </p>
+    <p>
+      If you didn't create an account with us, please ignore this email.
+    </p>
+    <p>Thanks!</p>
+  </body>
+</html> 

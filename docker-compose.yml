@@ -61,12 +61,12 @@ services:
       - VITE_API_URL=http://localhost:3000
     networks:
       - app_network
-  
+
   mailcatcher:
     image: tophfr/mailcatcher
     ports:
-      - "1080:1080"
-      - "1025:1025"
+      - "1080:80"
+      - "1025:25"
     networks:
       - app_network
 

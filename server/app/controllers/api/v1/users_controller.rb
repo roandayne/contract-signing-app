@@ -67,6 +67,15 @@ module Api::V1
       credentials = login_params
       user = User.find_by(email: credentials[:email])
       
+      Rails.logger.debug "Login attempt for email: #{credentials[:email]}"
+      Rails.logger.debug "Login attempt password: #{credentials[:password].present?}"
+      Rails.logger.debug "Login attempt password: #{credentials[:password]}"
+      Rails.logger.debug "User found: #{user.present?}"
+      if user
+        auth_result = user.authenticate(credentials[:password])
+        Rails.logger.debug "Authentication result: #{auth_result}"
+      end
+
       if user&.authenticate(credentials[:password])
         payload = { user_id: user.id }
         token = JsonWebToken.encode_and_set_cookie(payload, response)
@@ -95,9 +104,6 @@ module Api::V1
       if @user.save
         # Send validation email
         UserMailer.email_validation(@user).deliver_later
-        
-        payload = { user_id: @user.id }
-        token = JsonWebToken.encode_and_set_cookie(payload, response)
         
         render json: {
           message: 'User registered successfully. Please check your email to validate your account.',
@@ -134,15 +140,11 @@ module Api::V1
       end
 
       def login_params
-        if request.content_type =~ /json/
-          params.require(:user).permit(:email, :password)
-        else
-          params.permit(:email, :password)
-        end
+        params.permit(:email, :password)
       end
 
       def register_params
-        params.permit(:email, :password)
+        params.permit(:email, :password, :password_confirmation)
       end
 
       def generate_token
