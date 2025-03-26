@@ -18,7 +18,7 @@
           })
           navigate('/dashboard')
       } catch (error) {
-          console.log(error)
+          alert(error)
       }
     }
 
@@ -29,7 +29,7 @@
         });
         navigate('/dashboard');
       } catch (error) {
-        console.log(error);
+        alert(error);
       }
     };
 

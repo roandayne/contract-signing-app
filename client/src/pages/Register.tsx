@@ -18,7 +18,7 @@ const Register = () => {
         })
         alert(response.data.message)
     } catch (error) {
-        console.log(error)
+        alert(error)
     }
   }
 
@@ -29,7 +29,7 @@ const Register = () => {
       });
       navigate('/dashboard');
     } catch (error) {
-      console.log(error);
+      alert(error);
     }
   };
 
