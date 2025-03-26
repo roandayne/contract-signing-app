@@ -3,7 +3,7 @@ module Api::V1
     include ::AuthorizeApiRequest
     protect_from_forgery with: :null_session
     skip_before_action :verify_authenticity_token
-    skip_before_action :authorize_request, only: [:login, :register, :validate_email]
+    skip_before_action :authorize_request, only: [:login, :google_login, :register, :validate_email]
     before_action :set_api_v1_user, only: %i[ show edit update destroy ]
 
     # GET /api/v1/users or /api/v1/users.json
@@ -63,11 +63,38 @@ module Api::V1
       end
     end
 
+    def google_login
+      credential = params[:credential]
+      
+      begin
+        decoder = JWT.decode(credential, nil, false)
+        payload = decoder.first
+        
+        email = payload['email']
+
+        user = User.find_or_create_by(email: email) do |new_user|
+          new_user.password = SecureRandom.hex(16)
+          new_user.email_validated = true
+        end
+
+        payload = { user_id: user.id }
+        token = JsonWebToken.encode_and_set_cookie(payload, response)
+        
+        render json: {
+          message: 'Logged in successfully with Google',
+          user: { id: user.id, email: user.email }
+        }, status: :ok
+      rescue JWT::DecodeError => e
+        render json: { error: 'Invalid Google token' }, status: :unauthorized
+      rescue StandardError => e
+        render json: { error: 'An error occurred during Google login' }, status: :internal_server_error
+      end
+    end
+
     def login
       credentials = login_params
       user = User.find_by(email: credentials[:email])
       
-      Rails.logger.debug "Login attempt for email: #{credentials[:email]}"
       Rails.logger.debug "Login attempt password: #{credentials[:password].present?}"
       Rails.logger.debug "Login attempt password: #{credentials[:password]}"
       Rails.logger.debug "User found: #{user.present?}"

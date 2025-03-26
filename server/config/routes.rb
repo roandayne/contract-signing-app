@@ -24,6 +24,7 @@ Rails.application.routes.draw do
       post '/login', to: 'users#login'
       post '/register', to: 'users#register'
       delete '/logout', to: 'users#logout'
+      post '/google-login', to: 'users#google_login'
     end
   end
 end
