@@ -36,7 +36,7 @@ export default function Navbar(props: Props) {
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Typography variant="h6" sx={{ my: 2 }}>
-        MUI
+        LOGO
       </Typography>
       <Divider />
       <List>
@@ -73,7 +73,7 @@ export default function Navbar(props: Props) {
             color='primary'
             sx={{ flexGrow: 1, display: { xs: 'none', sm: 'flex' } }}
           >
-            MUI
+            LOGO
           </Typography>
           <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
             {navItems.map((item) => (
