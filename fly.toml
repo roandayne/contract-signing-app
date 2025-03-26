@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for contract-signing-app on 2025-03-27T00:47:28+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'contract-signing-app'
+primary_region = 'ord'
+
+[env]
+PORT = "3000"
+RAILS_ENV = "production"
+DATABASE_URL = "postgres://postgres:password@db:5432/contract_signing_app"
+CLIENT_URL = "https://ceo-sidekicks-contract-signing.netlify.app"
+
+[build]
+dockerfile = "server/Dockerfile.prod"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
