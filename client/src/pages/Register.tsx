@@ -2,7 +2,7 @@ import { Box, Button, Divider, Container, TextField, Typography } from '@mui/mat
 import { useState } from 'react'
 import axiosInstance from '../axiosInstance'
 import { GoogleLogin } from '@react-oauth/google'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Image from '../assets/images/register.jpg'
 
 const Register = () => {
@@ -34,7 +34,7 @@ const Register = () => {
   };
 
   return (
-    <Box sx={{paddingTop: "64px", display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh"}}>
+    <Box sx={{display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh"}}>
         <Box sx={{backgroundImage: `url(${Image})`, backgroundSize: "cover", backgroundPosition: "center", width: "50%", height: "100%", borderRadius: "0 24px 24px 0", display: "flex",
             justifyContent: "center",
             alignItems: "center"}}>
@@ -82,6 +82,9 @@ const Register = () => {
               }} 
             />
             <Button onClick={handleRegister} variant="contained" sx={{borderRadius: "24px"}}>Register</Button>
+            <Container sx={{display: "flex", justifyContent: "center"}}>
+              <Typography variant="body2">Already have an account? <Link to="/login">Login</Link></Typography>
+            </Container>
             <Divider>OR</Divider>
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <GoogleLogin

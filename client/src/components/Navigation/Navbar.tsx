@@ -23,7 +23,7 @@ interface Props {
 }
 
 const drawerWidth = 240;
-const navItems = ['Home', 'About', 'Contact'];
+const navItems = [""];
 
 export default function Navbar(props: Props) {
   const { window } = props;
@@ -56,7 +56,7 @@ export default function Navbar(props: Props) {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar component="nav" sx={{ backgroundColor: 'transparent' }}>
+      <AppBar component="nav" sx={{ backgroundColor: 'transparent', boxShadow: "none" }}>
         <Toolbar>
           <IconButton
             color="inherit"

@@ -34,7 +34,7 @@
     };
 
     return (
-      <Box sx={{paddingTop: "64px", display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh"}}>
+      <Box sx={{display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh"}}>
         <Box sx={{backgroundImage: `url(${Image})`, backgroundSize: "cover", backgroundPosition: "center", width: "50%", height: "100%", borderRadius: "0 24px 24px 0", display: "flex",
             justifyContent: "center",
             alignItems: "center"}}>
