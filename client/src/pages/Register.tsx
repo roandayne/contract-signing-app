@@ -34,69 +34,107 @@ const Register = () => {
   };
 
   return (
-    <Box sx={{display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh"}}>
-        <Box sx={{backgroundImage: `url(${Image})`, backgroundSize: "cover", backgroundPosition: "center", width: "50%", height: "100%", borderRadius: "0 24px 24px 0", display: "flex",
-            justifyContent: "center",
-            alignItems: "center"}}>
-          <Box sx={{
-            background: 'rgba(255, 255, 255, 0.27)',
-            borderRadius: '24px',
-            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            padding: '20px',
-            margin: 'auto',
-            width: "50%",
-            height: "30%",
-            display: "flex",
-            gap: "20px",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center"
+    <Box sx={{
+      display: "flex", 
+      flexDirection: { xs: 'column', md: 'row' },
+      minHeight: "100vh",
+      width: "100vw"
+    }}>
+      <Box sx={{
+        backgroundImage: `url(${Image})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        width: { xs: '100%', md: '50%' },
+        height: { xs: '30vh', sm: 'inherit' },
+        borderRadius: { xs: '0 0 24px 24px', md: '0 24px 24px 0' },
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center"
+      }}>
+        <Box sx={{
+          background: 'rgba(255, 255, 255, 0.27)',
+          borderRadius: '24px',
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          padding: '20px',
+          margin: 'auto',
+          width: { xs: "80%", sm: "60%", md: "50%" },
+          height: { xs: "60%", md: "30%" },
+          display: "flex",
+          gap: "20px",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+          <Typography variant="h6" sx={{ 
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' },
+            textAlign: 'center'
           }}>
-            <Typography variant="h6">Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</Typography>
-          </Box>
-        </Box>
-        <Box sx={{width: "50%", height: "100%", borderRadius: "24px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center"}}>
-          <Container sx={{display: "flex", flexDirection: "column", gap: "20px", width: "70%", margin: "auto"}}>
-            <Typography variant="h4" sx={{textAlign: "center"}}>Create an account</Typography>
-            <TextField 
-              label="Email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '24px'
-                }
-              }} 
-            />
-            <TextField 
-              label="Password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '24px'
-                }
-              }} 
-            />
-            <Button onClick={handleRegister} variant="contained" sx={{borderRadius: "24px"}}>Register</Button>
-            <Container sx={{display: "flex", justifyContent: "center"}}>
-              <Typography variant="body2">Already have an account? <Link to="/login">Login</Link></Typography>
-            </Container>
-            <Divider>OR</Divider>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  console.log('Login Failed');
-                }}
-              />
-            </Box>
-          </Container>
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.
+          </Typography>
         </Box>
       </Box>
+      <Box sx={{
+        width: { xs: '100%', md: '50%' },
+        minHeight: { xs: '70vh', md: '100%' },
+        borderRadius: "24px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        py: { xs: 4, md: 0 }
+      }}>
+        <Container sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          width: { xs: "90%", sm: "70%", md: "70%" },
+          margin: "auto"
+        }}>
+          <Typography variant="h4" sx={{
+            textAlign: "center",
+            fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' }
+          }}>
+            Create an account
+          </Typography>
+          <TextField 
+            label="Email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '24px'
+              }
+            }} 
+          />
+          <TextField 
+            label="Password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '24px'
+              }
+            }} 
+          />
+          <Button onClick={handleRegister} variant="contained" sx={{borderRadius: "24px"}}>Register</Button>
+          <Container sx={{display: "flex", justifyContent: "center"}}>
+            <Typography variant="body2">Already have an account? <Link to="/login">Login</Link></Typography>
+          </Container>
+          <Divider>OR</Divider>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                console.log('Login Failed');
+              }}
+            />
+          </Box>
+        </Container>
+      </Box>
+    </Box>
   )
 }
 
