@@ -60,12 +60,11 @@ export default function Table({
         initialState={{
           pagination: {
             paginationModel: {
-              pageSize: 5,
+              pageSize: 10,
             },
           },
         }}
-        pageSizeOptions={[5]}
-        checkboxSelection
+        pageSizeOptions={[10]}
         disableRowSelectionOnClick
       />
     </Box>
