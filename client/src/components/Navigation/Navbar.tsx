@@ -23,7 +23,7 @@ interface Props {
 }
 
 const drawerWidth = 240;
-const navItems = [""];
+const navItems = [''];
 
 export default function Navbar(props: Props) {
   const { window } = props;
@@ -51,12 +51,16 @@ export default function Navbar(props: Props) {
     </Box>
   );
 
-  const container = window !== undefined ? () => window().document.body : undefined;
+  const container =
+    window !== undefined ? () => window().document.body : undefined;
 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar component="nav" sx={{ backgroundColor: 'transparent', boxShadow: "none" }}>
+      <AppBar
+        component="nav"
+        sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
@@ -70,16 +74,14 @@ export default function Navbar(props: Props) {
           <Typography
             variant="h6"
             component="div"
-            color='primary'
+            color="primary"
             sx={{ flexGrow: 1, display: { xs: 'none', sm: 'flex' } }}
           >
             LOGO
           </Typography>
           <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
             {navItems.map((item) => (
-              <Button key={item}>
-                {item}
-              </Button>
+              <Button key={item}>{item}</Button>
             ))}
           </Box>
         </Toolbar>
@@ -95,7 +97,10 @@ export default function Navbar(props: Props) {
           }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+            },
           }}
         >
           {drawer}
