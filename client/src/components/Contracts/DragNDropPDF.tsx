@@ -25,6 +25,7 @@ interface DragNDropPDFProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   handleFileUpload: () => void;
+  handleRemoveFile: (file: File) => void;
 }
 
 const DragNDropPDF: React.FC<DragNDropPDFProps> = ({
@@ -34,6 +35,7 @@ const DragNDropPDF: React.FC<DragNDropPDFProps> = ({
   isOpen,
   setIsOpen,
   handleFileUpload,
+  handleRemoveFile,
 }) => {
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -114,6 +116,13 @@ const DragNDropPDF: React.FC<DragNDropPDFProps> = ({
                               <DragIndicatorIcon sx={{ mr: 2, color: 'grey.500' }} />
                             </Box>
                             <Typography>{file.name}</Typography>
+                            <Button 
+                              onClick={() => handleRemoveFile(file)}
+                              sx={{ ml: 'auto' }}
+                              color="error"
+                            >
+                              Remove
+                            </Button>
                           </ListItem>
                         )}
                       </Draggable>

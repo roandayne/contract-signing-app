@@ -1,27 +1,14 @@
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {
   Box,
   Button,
-  Modal,
-  Stack,
-  Typography,
-  List,
-  ListItem,
+  Stack
 } from '@mui/material';
-import React, { useState } from 'react';
-import Table from '../components/CustomMui/Table';
 import { GridColDef } from '@mui/x-data-grid';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import React, { useState } from 'react';
 import axiosInstance from '../axiosInstance';
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-  DroppableProvided,
-  DraggableProvided,
-} from '@hello-pangea/dnd';
 import DragNDropPDF from '../components/Contracts/DragNDropPDF';
+import Table from '../components/CustomMui/Table';
 
 const columns = (handleDownload: (url: string) => void): GridColDef[] => [
   {
@@ -122,6 +109,10 @@ const Contracts = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  const handleRemoveFile = (fileToRemove: File) => {
+    setFiles(files.filter(file => file !== fileToRemove));
+  };
+
   const handleDownload = (url: string) => {
     window.open(url, '_blank');
   };
@@ -174,6 +165,7 @@ const Contracts = () => {
           />
         </Button>
       </Stack>
+      
       <Table columns={columns(handleDownload)} rows={data} />
 
       <DragNDropPDF
@@ -183,6 +175,7 @@ const Contracts = () => {
         setIsOpen={setIsOpen}
         handleFileUpload={handleFileUpload}
         isUploading={isUploading}
+        handleRemoveFile={handleRemoveFile}
       />
 
     </Box>
