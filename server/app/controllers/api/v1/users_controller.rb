@@ -155,6 +155,16 @@ module Api::V1
       end
     end
 
+    def check_auth
+      if current_user
+        render json: {
+          user: { id: current_user.id, email: current_user.email }
+        }, status: :ok
+      else
+        render json: { error: 'Unauthorized' }, status: :unauthorized
+      end
+    end
+
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_api_v1_user

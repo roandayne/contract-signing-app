@@ -5,7 +5,7 @@ gem "rails", "~> 8.0.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
-gem "pg", "~> 1.1"
+gem "pg", "~> 1.5.0"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
@@ -42,6 +42,9 @@ gem 'jwt'
 gem 'jsonapi-serializer'
 gem 'dotenv-rails'
 gem 'aws-sdk-s3', '~> 1.142'
+gem 'ruby-rc4', '~> 0.1.5'
+gem 'combine_pdf', '~> 1.0.30'
+
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"

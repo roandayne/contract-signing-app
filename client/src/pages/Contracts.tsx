@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Table from '../components/CustomMui/Table';
 import { GridColDef } from '@mui/x-data-grid';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import axiosInstance from '../axiosInstance';
 
 const columns = (handleDownload: (url: string) => void): GridColDef[] => [
   {
@@ -98,6 +99,8 @@ type DataType = {
 
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [form, setForm] = useState<FormData>();
+  const [formUrl, setFormUrl] = useState<string>();
   const [isUploading, setIsUploading] = useState(false);
 
   const handleDownload = (url: string) => {
@@ -105,28 +108,24 @@ const Contracts = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('file', file);
+    
+    // Append each file to the FormData
+    Array.from(files).forEach((file) => {
+      formData.append('files[]', file);
+    });
 
     try {
-      const response = await fetch('/api/contracts/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      // You might want to add error handling UI here
+      const response = await axiosInstance.post('/api/v1/forms', formData);
+      alert(response.data.message);
+      setFormUrl(response.data.form.file_url);
+    } catch (error: any) {
+      console.error('Error uploading files:', error);
+      alert(error.response?.data?.error || 'Failed to upload files');
     } finally {
       setIsUploading(false);
     }
@@ -141,11 +140,12 @@ const Contracts = () => {
           startIcon={<CloudUploadIcon />}
           disabled={isUploading}
         >
-          Upload Contracts
+          Upload PDFs
           <input
             type="file"
             hidden
-            accept=".csv,.xlsx,.xls"
+            multiple
+            accept=".pdf"
             onChange={handleFileUpload}
           />
         </Button>
