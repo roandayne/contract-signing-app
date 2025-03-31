@@ -1,9 +1,27 @@
-import { Box, Button, Stack } from '@mui/material';
+import {
+  Box,
+  Button,
+  Modal,
+  Stack,
+  Typography,
+  List,
+  ListItem,
+} from '@mui/material';
 import React, { useState } from 'react';
 import Table from '../components/CustomMui/Table';
 import { GridColDef } from '@mui/x-data-grid';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import axiosInstance from '../axiosInstance';
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+  DroppableProvided,
+  DraggableProvided,
+} from '@hello-pangea/dnd';
+import DragNDropPDF from '../components/Contracts/DragNDropPDF';
 
 const columns = (handleDownload: (url: string) => void): GridColDef[] => [
   {
@@ -99,23 +117,22 @@ type DataType = {
 
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
-  const [form, setForm] = useState<FormData>();
   const [formUrl, setFormUrl] = useState<string>();
+  const [isOpen, setIsOpen] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleDownload = (url: string) => {
     window.open(url, '_blank');
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const handleFileUpload = async () => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    
-    // Append each file to the FormData
-    Array.from(files).forEach((file) => {
+
+    files.forEach((file) => {
       formData.append('files[]', file);
     });
 
@@ -123,6 +140,8 @@ const Contracts = () => {
       const response = await axiosInstance.post('/api/v1/forms', formData);
       alert(response.data.message);
       setFormUrl(response.data.form.file_url);
+      setIsOpen(false);
+      setFiles([]);
     } catch (error: any) {
       console.error('Error uploading files:', error);
       alert(error.response?.data?.error || 'Failed to upload files');
@@ -132,7 +151,7 @@ const Contracts = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', height: '100%', p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <Button
           variant="contained"
@@ -140,17 +159,32 @@ const Contracts = () => {
           startIcon={<CloudUploadIcon />}
           disabled={isUploading}
         >
-          Upload PDFs
+          Upload Contracts
           <input
             type="file"
             hidden
             multiple
             accept=".pdf"
-            onChange={handleFileUpload}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              if (event.target.files) {
+                setFiles(Array.from(event.target.files));
+                setIsOpen(true);
+              }
+            }}
           />
         </Button>
       </Stack>
       <Table columns={columns(handleDownload)} rows={data} />
+
+      <DragNDropPDF
+        files={files}
+        setFiles={setFiles}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        handleFileUpload={handleFileUpload}
+        isUploading={isUploading}
+      />
+
     </Box>
   );
 };
