@@ -1,7 +1,8 @@
-import { Box, Button } from '@mui/material';
+import { Box, Button, Stack } from '@mui/material';
 import React, { useState } from 'react';
 import Table from '../components/CustomMui/Table';
 import { GridColDef } from '@mui/x-data-grid';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const columns = (handleDownload: (url: string) => void): GridColDef[] => [
   {
@@ -97,14 +98,58 @@ type DataType = {
 
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDownload = (url: string) => {
-    // Logic to handle file download
     window.open(url, '_blank');
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/contracts/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      setData(result);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      // You might want to add error handling UI here
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
     <Box>
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        <Button
+          variant="contained"
+          component="label"
+          startIcon={<CloudUploadIcon />}
+          disabled={isUploading}
+        >
+          Upload Contracts
+          <input
+            type="file"
+            hidden
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileUpload}
+          />
+        </Button>
+      </Stack>
       <Table columns={columns(handleDownload)} rows={data} />
     </Box>
   );

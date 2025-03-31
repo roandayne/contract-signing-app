@@ -25,6 +25,7 @@ Rails.application.routes.draw do
       post '/register', to: 'users#register'
       delete '/logout', to: 'users#logout'
       post '/google-login', to: 'users#google_login'
+      resources :forms, only: [:create, :show]
     end
   end
 end
