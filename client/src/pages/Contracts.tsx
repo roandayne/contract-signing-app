@@ -89,7 +89,7 @@ interface SignatureField {
 
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
-  const [formUrl, setFormUrl] = useState<string>();
+  const [_formUrl, setFormUrl] = useState<string>();
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -128,7 +128,7 @@ const Contracts = () => {
     if (!selectedPdf) return;
 
     try {
-      const response = await axiosInstance.post(`/api/v1/forms/${selectedPdf.id}/signature_fields`, {
+      await axiosInstance.post(`/api/v1/forms/${selectedPdf.id}/signature_fields`, {
         signature_fields: fields
       });
       

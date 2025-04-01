@@ -65,7 +65,7 @@ const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({ pdfUrl, onS
   const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('signature');
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [_containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const updateContainerSize = () => {
@@ -86,7 +86,7 @@ const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({ pdfUrl, onS
   }, []);
 
   const handleFieldTypeChange = (
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newFieldType: FieldType | null,
   ) => {
     if (newFieldType !== null) {

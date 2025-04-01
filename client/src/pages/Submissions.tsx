@@ -99,7 +99,7 @@ type DataType = {
 };
 
 const Submissions = () => {
-  const [data, setData] = useState<DataType[]>([]);
+  const [data, _setData] = useState<DataType[]>([]);
 
 
   const handleDownload = (url: string) => {
