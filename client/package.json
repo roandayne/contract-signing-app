@@ -18,10 +18,16 @@
     "@mui/system": "^7.0.1",
     "@mui/x-data-grid": "^6.19.4",
     "@react-oauth/google": "^0.12.1",
+    "@types/react-pdf": "^7.0.0",
+    "@types/react-signature-canvas": "^1.0.7",
     "axios": "^1.6.7",
+    "pdfjs-dist": "^4.0.379",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.1"
+    "react-pdf": "^7.7.1",
+    "react-router-dom": "^6.22.1",
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "@react-pdf/renderer": "^3.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",

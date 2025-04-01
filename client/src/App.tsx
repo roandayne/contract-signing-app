@@ -7,6 +7,7 @@ import { Box } from '@mui/material';
 import Guest from './components/Template/Guest';
 import Authenticated from './components/Template/Authenticated';
 import Contracts from './pages/Contracts';
+import Submissions from './pages/Submissions';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
           element={
             <Authenticated>
               <Contracts />
+            </Authenticated>
+          }
+        />
+        <Route
+          path="/submissions"
+          element={
+            <Authenticated>
+              <Submissions />
             </Authenticated>
           }
         />
