@@ -89,9 +89,9 @@ Rails.application.configure do
 
   # Enable CORS headers when responding to requests
   config.action_dispatch.default_headers = {
-    'Access-Control-Allow-Origin' => ENV['CLIENT_URL'] || '*',
-    'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD',
-    'Access-Control-Allow-Headers' => 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
-    'Access-Control-Allow-Credentials' => 'true'
+    'Access-Control-Allow-Origin' => 'https://ceo-sidekicks-contract-signing.netlify.app',
+    'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials' => 'true',
+    'Access-Control-Allow-Headers' => 'Origin, Content-Type, Accept, Authorization, X-Requested-With'
   }
 end
