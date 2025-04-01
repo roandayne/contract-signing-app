@@ -9,7 +9,6 @@ primary_region = 'ord'
 [env]
 PORT = "3000"
 RAILS_ENV = "production"
-DATABASE_URL = "postgres://postgres:password@db:5432/contract_signing_app"
 CLIENT_URL = "https://ceo-sidekicks-contract-signing.netlify.app"
 
 [build]
