@@ -82,31 +82,6 @@ const Contracts = () => {
     setIsSignatureEditorOpen(true);
   };
 
-  const handleSaveSignatureFields = async (fields: SignatureField[]) => {
-    if (!selectedPdf) return;
-
-    try {
-      await axiosInstance.post(
-        `/api/v1/forms/${selectedPdf.id}/signature_fields`,
-        {
-          signature_fields: fields,
-        }
-      );
-
-      // Show the public link modal
-      const publicUrl = `${window.location.origin}/form/${selectedPdf.id}`;
-      setPublicLink(publicUrl);
-      setIsSignatureEditorOpen(false);
-      setIsPublicLinkModalOpen(true);
-
-      // Update the table data
-      fetchContracts();
-    } catch (error) {
-      console.error('Error saving signature fields:', error);
-      alert('Failed to save signature fields');
-    }
-  };
-
   const handleFileUpload = async () => {
     if (!files || files.length === 0) return;
 
