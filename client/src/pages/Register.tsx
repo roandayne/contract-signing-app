@@ -5,6 +5,7 @@ import {
   Container,
   TextField,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -13,6 +14,8 @@ import axiosInstance from '../axiosInstance';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate, Link } from 'react-router-dom';
 import Image from '../assets/images/register.jpg';
+import { useState } from 'react';
+import { LoadingButton } from '@mui/lab';
 
 const validationSchema = yup.object({
   email: yup
@@ -41,6 +44,8 @@ type FormData = {
 
 const Register = () => {
   const navigate = useNavigate();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const {
     register,
     handleSubmit,
@@ -50,24 +55,30 @@ const Register = () => {
   });
 
   const onSubmit = async (data: FormData) => {
+    setIsLoading(true)
     try {
       const response = await axiosInstance.post('/api/v1/register', {
         email: data.email,
         password: data.password,
       });
+      setIsLoading(false)
       alert(response.data.message);
     } catch (error) {
+      setIsLoading(false)
       alert(error);
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsGoogleLoading(true);
     try {
       await axiosInstance.post('/api/v1/google-login', {
         credential: credentialResponse.credential,
       });
+      setIsGoogleLoading(false);
       navigate('/dashboard');
     } catch (error) {
+      setIsGoogleLoading(false);
       alert(error);
     }
   };
@@ -192,13 +203,15 @@ const Register = () => {
               },
             }}
           />
-          <Button
+          <LoadingButton
+            loading={isLoading}
+            loadingPosition="start"
             type="submit"
             variant="contained"
             sx={{ borderRadius: '24px' }}
           >
             Register
-          </Button>
+          </LoadingButton>
           <Container sx={{ display: 'flex', justifyContent: 'center' }}>
             <Typography variant="body2">
               Already have an account? <Link to="/login">Login</Link>
@@ -206,12 +219,16 @@ const Register = () => {
           </Container>
           <Divider>OR</Divider>
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => {
-                console.log('Login Failed');
-              }}
-            />
+            {isGoogleLoading ? (
+              <CircularProgress size={40} />
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  console.log('Login Failed');
+                }}
+              />
+            )}
           </Box>
         </Container>
       </Box>

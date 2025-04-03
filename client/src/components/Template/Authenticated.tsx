@@ -3,11 +3,12 @@ import Sidebar from '../Navigation/Sidebar';
 import Box from '@mui/material/Box';
 import { useAuth } from '../../hooks/useAuth';
 import { CircularProgress } from '@mui/material';
+import { Navigate } from 'react-router-dom';
 
 const Authenticated: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +23,10 @@ const Authenticated: React.FC<{ children: React.ReactNode }> = ({
         <CircularProgress />
       </Box>
     );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
   }
 
   return (
