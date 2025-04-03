@@ -7,8 +7,10 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Draggable, { DraggableEventHandler, DraggableData } from 'react-draggable';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
+import axiosInstance from '../../axiosInstance';
 
 // Set up PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -23,23 +25,26 @@ export interface SignatureField {
   height: number;
   type: FieldType;
   id: number;
+  isSaved?: boolean;
 }
 
 interface SignatureFieldEditorProps {
   pdfUrl: string;
+  formId: number;
   onSave?: (fields: SignatureField[]) => void;
   initialFields?: SignatureField[];
 }
 
 const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
-  signature: { width: 200, height: 50 },
-  initial: { width: 100, height: 50 },
-  name: { width: 200, height: 40 },
-  date: { width: 150, height: 40 },
+  signature: { width: 200, height: 35 },
+  initial: { width: 100, height: 35 },
+  name: { width: 200, height: 30 },
+  date: { width: 150, height: 30 },
 };
 
 export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   pdfUrl,
+  formId,
   onSave,
   initialFields = [],
 }) => {
@@ -51,6 +56,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('signature');
   const [scale, setScale] = useState(1);
+  const [activeDragId, setActiveDragId] = useState<number | null>(null);
 
   // Load initial fields if provided
   useEffect(() => {
@@ -65,11 +71,24 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   };
 
   const handleClickOnPdf = (e: React.MouseEvent<HTMLDivElement>): void => {
+    // Don't add new field if clicking on an existing field
+    if ((e.target as HTMLElement).closest('.signature-field')) {
+      return;
+    }
+
     if (!containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale;
-    const y = (e.clientY - rect.top) / scale;
+    // Find the PDF page element
+    const pdfPage = containerRef.current.querySelector('.react-pdf__Page');
+    if (!pdfPage) return;
+
+    const pdfRect = pdfPage.getBoundingClientRect();
+    const scrollLeft = containerRef.current.scrollLeft || 0;
+    const scrollTop = containerRef.current.scrollTop || 0;
+
+    // Calculate position relative to the PDF page
+    const x = ((e.clientX - pdfRect.left + scrollLeft) / scale);
+    const y = ((e.clientY - pdfRect.top + scrollTop) / scale);
 
     // Add field at clicked position with dimensions based on type
     const { width, height } = fieldDimensions[selectedFieldType];
@@ -86,25 +105,43 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   ): void => {
     const newFields = [
       ...signatureFields,
-      { pageNum, x, y, width, height, type, id: Date.now() },
+      { pageNum, x, y, width, height, type, id: Date.now(), isSaved: false },
     ];
     setSignatureFields(newFields);
-    if (onSave) {
-      onSave(newFields);
-    }
   };
 
-  const handleDeleteField = (id: number) => {
-    const newFields = signatureFields.filter(field => field.id !== id);
-    setSignatureFields(newFields);
-    if (onSave) {
-      onSave(newFields);
+  const handleDeleteField = async (id: number) => {
+    // Find the field to check if it's saved
+    
+    const field = signatureFields.find(field => field.id === id);
+    console.log("meow", field)
+    if (!field) return;
+
+    // If the field is not saved (isSaved is false or undefined), just remove it from state
+    if (!field.isSaved) {
+      console.log("this?")
+      const newFields = signatureFields.filter(field => field.id !== id);
+      setSignatureFields(newFields);
+      return;
+    }
+
+    // For saved fields, make the API call
+    try {
+      await axiosInstance.delete(`/api/v1/forms/${formId}/signatures/${id}`);
+      const newFields = signatureFields.filter(field => field.id !== id);
+      setSignatureFields(newFields);
+    } catch (error) {
+      console.error('Error deleting signature field:', error);
+      // You might want to show an error message to the user here
     }
   };
 
   const handleSave = () => {
     if (onSave) {
       onSave(signatureFields);
+      // Mark all fields as saved
+      const savedFields = signatureFields.map(field => ({ ...field, isSaved: true }));
+      setSignatureFields(savedFields);
     }
   };
 
@@ -144,6 +181,37 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
       const newScale = prevScale + delta;
       return Math.min(Math.max(0.5, newScale), 2);
     });
+  };
+
+  const handleDragStop: DraggableEventHandler = (e, data: DraggableData) => {
+    if (!containerRef.current || !activeDragId) return;
+
+    const newFields = signatureFields.map(field => {
+      if (field.id === activeDragId) {
+        return {
+          ...field,
+          x: data.x / scale,
+          y: data.y / scale,
+          pageNum: pageNumber
+        };
+      }
+      return field;
+    });
+
+    setSignatureFields(newFields);
+    
+    // Make the PATCH request for position updates
+    axiosInstance.patch(`/api/v1/forms/${formId}/signatures/${activeDragId}`, {
+      signature: {
+        position_x: data.x / scale,
+        position_y: data.y / scale,
+        page_number: pageNumber
+      }
+    }).catch(error => {
+      console.error('Error updating signature field position:', error);
+    });
+
+    setActiveDragId(null);
   };
 
   return (
@@ -212,7 +280,20 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
           position: 'relative'
         }}
       >
-        <Box ref={containerRef} position="relative" onClick={handleClickOnPdf}>
+        <Box 
+          ref={containerRef} 
+          position="relative" 
+          onClick={handleClickOnPdf} 
+          sx={{ 
+            position: 'relative',
+            '& .react-pdf__Document': {
+              '& .react-pdf__Page': {
+                position: 'relative',
+                backgroundColor: 'white'
+              }
+            }
+          }}
+        >
           {isLoading && (
             <Box display="flex" justifyContent="center" my={4}>
               <CircularProgress />
@@ -241,59 +322,97 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
               }
             />
           </Document>
-          {!isLoading && signatureFields
-            .filter(field => field.pageNum === pageNumber)
-            .map((field) => (
-              <Box
-                key={field.id}
-                position="absolute"
-                left={`${field.x * scale}px`}
-                top={`${field.y * scale}px`}
-                width={`${field.width * scale}px`}
-                height={`${field.height * scale}px`}
-                border="1px dashed red"
-                bgcolor="rgba(255, 0, 0, 0.1)"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 0, 0, 0.2)',
-                  },
-                }}
-              >
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  width="100%"
-                  position="relative"
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              '& > *': {
+                pointerEvents: 'auto'
+              }
+            }}
+          >
+            {!isLoading && signatureFields
+              .filter(field => field.pageNum === pageNumber)
+              .map((field) => (
+                <Draggable
+                  key={field.id}
+                  position={{
+                    x: field.x * scale,
+                    y: field.y * scale
+                  }}
+                  onStart={() => setActiveDragId(field.id)}
+                  onStop={handleDragStop}
+                  bounds="parent"
+                  scale={scale}
+                  cancel=".delete-button"
                 >
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteField(field.id);
-                    }}
+                  <Box
+                    className="signature-field"
+                    position="absolute"
+                    width={`${field.width * scale}px`}
+                    height={`${field.height * scale}px`}
+                    border="2px dashed red"
+                    bgcolor="rgba(255, 255, 255, 0.9)"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    onClick={(e) => e.stopPropagation()}
                     sx={{
-                      position: 'absolute',
-                      top: -20,
-                      right: -20,
-                      bgcolor: 'background.paper',
+                      cursor: 'move',
+                      zIndex: 1000,
+                      backdropFilter: 'blur(2px)',
                       '&:hover': {
-                        bgcolor: 'error.light',
+                        bgcolor: 'rgba(255, 255, 255, 0.95)',
+                        boxShadow: '0 0 10px rgba(0,0,0,0.2)'
                       },
                     }}
                   >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                  <Typography variant="caption" color="textSecondary">
-                    {getFieldLabel(field)}
-                  </Typography>
-                </Box>
-              </Box>
-            ))}
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                      width="100%"
+                      position="relative"
+                      sx={{ p: 1 }}
+                    >
+                      <IconButton
+                        className="delete-button"
+                        size="small"
+                        onClick={(e) => {
+                          console.log("here?")
+                          // e.preventDefault();
+                          // e.stopPropagation();
+                          // e.nativeEvent.stopImmediatePropagation();
+                          handleDeleteField(field.id);
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          bgcolor: 'background.paper',
+                          zIndex: 1001,
+                          padding: '4px',
+                          boxShadow: '0 0 5px rgba(0,0,0,0.2)',
+                          '&:hover': {
+                            bgcolor: 'error.light',
+                            color: 'white',
+                          },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                      <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                        {getFieldLabel(field)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Draggable>
+              ))}
+          </Box>
         </Box>
       </Paper>
 

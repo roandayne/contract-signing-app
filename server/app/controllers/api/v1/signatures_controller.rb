@@ -8,6 +8,18 @@ class Api::V1::SignaturesController < ApplicationController
       render json: { signatures: signatures }
     end
 
+    # DELETE /forms/:form_id/signatures/:id
+    def destroy
+      signature = Signature.find_by(id: params[:id], form_id: @form.id)
+      
+      if signature
+        signature.destroy
+        render json: { message: 'Signature field deleted successfully' }, status: :ok
+      else
+        render json: { error: 'Signature field not found' }, status: :not_found
+      end
+    end
+
     # POST /forms/:form_id/signatures
     def create
       # Log the incoming parameters for debugging
@@ -25,6 +37,7 @@ class Api::V1::SignaturesController < ApplicationController
             signature_type: field[:type],
             position_x: field[:x],
             position_y: field[:y],
+            page_number: field[:pageNum],
             signature_data: nil  # This will be filled when user actually signs
           )
         end
@@ -40,6 +53,21 @@ class Api::V1::SignaturesController < ApplicationController
           error: 'Failed to create signature fields',
           details: e.message
         }, status: :unprocessable_entity
+      end
+    end
+
+    # PATCH /forms/:form_id/signatures/:id
+    def update
+      signature = Signature.find_by(id: params[:id], form_id: @form.id)
+      
+      if signature
+        if signature.update(update_signature_params)
+          render json: { signature: signature, message: 'Signature field updated successfully' }, status: :ok
+        else
+          render json: { error: 'Failed to update signature field', details: signature.errors.full_messages }, status: :unprocessable_entity
+        end
+      else
+        render json: { error: 'Signature field not found' }, status: :not_found
       end
     end
 
@@ -68,5 +96,9 @@ class Api::V1::SignaturesController < ApplicationController
           end
         end
       end
+    end
+
+    def update_signature_params
+      params.require(:signature).permit(:position_x, :position_y, :page_number)
     end
 end

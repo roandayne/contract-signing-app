@@ -24,6 +24,7 @@
     "@react-oauth/google": "^0.12.1",
     "@react-pdf/renderer": "^3.4.0",
     "@types/react-pdf": "^7.0.0",
+    "@types/react-resizable": "^3.0.8",
     "@types/react-signature-canvas": "^1.0.7",
     "axios": "^1.6.7",
     "pdfjs-dist": "^4.0.379",
@@ -32,6 +33,7 @@
     "react-draggable": "^4.4.6",
     "react-hook-form": "^7.55.0",
     "react-pdf": "^7.7.1",
+    "react-resizable": "^3.0.5",
     "react-router-dom": "^6.22.1",
     "react-signature-canvas": "^1.1.0-alpha.2",
     "yup": "^1.6.1"

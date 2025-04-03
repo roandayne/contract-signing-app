@@ -7,11 +7,19 @@ import axiosInstance from '../../axiosInstance';
 
 interface ContractEditorProps {
   pdfUrl: string;
-  formId: string;
+  formId: number;
+}
+
+type Signature = {
+  id: number,
+  page_number: number,
+  position_x: number,
+  position_y: number,
+  signature_type: string
 }
 
 // Convert backend signature format to frontend format
-const convertSignatureToField = (signature: any): SignatureField => {
+const convertSignatureToField = (signature: Signature): SignatureField => {
   let type: 'signature' | 'initial' | 'name' | 'date';
   
   switch (signature.signature_type) {
@@ -33,7 +41,7 @@ const convertSignatureToField = (signature: any): SignatureField => {
 
   return {
     id: signature.id,
-    pageNum: 1, // You might need to add page_number to your signature model
+    pageNum: signature.page_number, // You might need to add page_number to your signature model
     x: signature.position_x,
     y: signature.position_y,
     width: type === 'initial' ? 100 : 200, // Use the same dimensions as in SignatureFieldEditor
@@ -97,6 +105,7 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
     <Box>
       <SignatureFieldEditor
         pdfUrl={pdfUrl}
+        formId={formId}
         onSave={handleSaveFields}
         initialFields={fields}
       />

@@ -27,7 +27,7 @@ Rails.application.routes.draw do
       post '/google-login', to: 'users#google_login'
       get '/auth/check', to: 'users#check_auth'
       resources :forms, only: [:index, :create, :show] do
-        resources :signatures do
+        resources :signatures, only: [:index, :create, :destroy, :update] do
           member do
             post :sign
           end
