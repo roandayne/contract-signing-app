@@ -25,13 +25,6 @@ type DataType = {
   submissions: number;
 };
 
-interface SignatureField {
-  id: string;
-  x: number;
-  y: number;
-  pageNumber: number;
-}
-
 const shortenLink = (longUrl: string, callback: (shortUrl: string) => void) => {
   axios
     .get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
@@ -145,7 +138,7 @@ const Contracts = () => {
             </IconButton>
           </Stack>
         ) : (
-          <Typography color="text.secondary">No signing link yet</Typography>
+          <Typography color="text.secondary">No signing link available</Typography>
         ),
     },
     {
@@ -174,13 +167,7 @@ const Contracts = () => {
             </IconButton>
           </Stack>
         ) : (
-          <Button
-            onClick={() => handleAddSignatureFields(params.row.id, '')}
-            sx={{ color: 'text.secondary' }}
-            variant="text"
-          >
-            Click to add signatures
-          </Button>
+          <Typography color="text.secondary">No file URL available</Typography>
         ),
     },
     {
@@ -199,7 +186,7 @@ const Contracts = () => {
             }
             disabled={params.row.signing_link}
           >
-            Add Signatures
+            Add Inputs
           </Button>
           <Button
             variant="contained"
