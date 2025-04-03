@@ -8,6 +8,11 @@ class Api::V1::FormsController < ApplicationController
       @signatures = @form.signatures
       render json: @signatures
     end
+
+    def index
+      forms = current_user.forms
+      render json: forms
+    end
     
     def create
         Rails.logger.debug "Params: #{params.inspect}"

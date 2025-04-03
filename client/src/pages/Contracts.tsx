@@ -14,75 +14,12 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
 import DragNDropPDF from '../components/Contracts/DragNDropPDF';
 import Table from '../components/CustomMui/Table';
-import { SignatureFieldEditor } from '../components/Contracts/SignatureFieldEditor';
 import { ContractEditor } from '../components/Contracts/ContractEditor';
-const columns = (
-  handleDownload: (url: string) => void,
-  handleAddSignatureFields: (id: string, url: string) => void
-): GridColDef[] => [
-  {
-    field: 'name',
-    headerName: 'Contract Name',
-    flex: 1,
-    minWidth: 150,
-    editable: false,
-  },
-  {
-    field: 'signing_link',
-    headerName: 'Signing Link',
-    flex: 2,
-    minWidth: 250,
-    editable: false,
-    renderCell: (params) =>
-      params.value ? (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography noWrap sx={{ flex: 1 }}>
-            {params.value}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => navigator.clipboard.writeText(params.value)}
-          >
-            <ContentCopyIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ) : (
-        <Typography color="text.secondary">No signing link yet</Typography>
-      ),
-  },
-  {
-    field: 'actions',
-    headerName: 'Actions',
-    flex: 1,
-    minWidth: 200,
-    editable: false,
-    renderCell: (params) => (
-      <Stack direction="row" spacing={1}>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={() =>
-            handleAddSignatureFields(params.row.id, params.row.file_url)
-          }
-          disabled={params.row.signing_link}
-        >
-          Add Signatures
-        </Button>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={() => handleDownload(params.value)}
-        >
-          Download
-        </Button>
-      </Stack>
-    ),
-  },
-];
+import axios from 'axios';
 
 type DataType = {
   id: string;
-  name: string;
+  file_name: string;
   signing_link: string;
   file_url: string;
   submissions: number;
@@ -95,8 +32,18 @@ interface SignatureField {
   pageNumber: number;
 }
 
+const shortenLink = (longUrl: string, callback: (shortUrl: string) => void) => {
+  axios
+    .get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
+    .then(response => {
+      callback(response.data);
+    })
+    .catch(error => console.error("Error shortening URL:", error));
+};
+
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [shortenedUrls, setShortenedUrls] = useState<Record<string, string>>({});
   const [_formUrl, setFormUrl] = useState<string>();
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -191,6 +138,100 @@ const Contracts = () => {
       setIsUploading(false);
     }
   };
+
+  const columns = (
+    handleDownload: (url: string) => void,
+    handleAddSignatureFields: (id: string, url: string) => void
+  ): GridColDef[] => [
+    {
+      field: 'file_name',
+      headerName: 'Contract Name',
+      flex: 1,
+      minWidth: 150,
+      editable: false,
+    },
+    {
+      field: 'signing_link',
+      headerName: 'Signing Link',
+      flex: 2,
+      minWidth: 250,
+      editable: false,
+      renderCell: (params) => 
+        params.value ? (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography noWrap sx={{ flex: 1 }}>
+              {params.value}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => navigator.clipboard.writeText(params.value)}
+            >
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        ) : (
+          <Typography color="text.secondary">No signing link yet</Typography>
+        ),
+    },
+    {
+      field: 'file_url',
+      headerName: 'File',
+      flex: 2,
+      minWidth: 250,
+      editable: false,
+      renderCell: (params) =>
+        params.value ? (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography noWrap sx={{ flex: 1 }}>
+              {shortenedUrls[params.value] || (() => {
+                const fullUrl = `${import.meta.env.VITE_API_URL}${params.value}`;
+                shortenLink(fullUrl, (shortUrl: string) => {
+                  setShortenedUrls((prev: Record<string, string>) => ({...prev, [params.value]: shortUrl}));
+                });
+                return fullUrl;
+              })()}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => navigator.clipboard.writeText(shortenedUrls[params.value] || `${import.meta.env.VITE_API_URL}${params.value}`)}
+            >
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        ) : (
+          <Typography color="text.secondary">No file link yet</Typography>
+        ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
+      minWidth: 200,
+      editable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() =>
+              handleAddSignatureFields(params.row.id, params.row.file_url)
+            }
+            disabled={params.row.signing_link}
+          >
+            Add Signatures
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => handleDownload(params.value)}
+          >
+            Download
+          </Button>
+        </Stack>
+      ),
+    },
+  ];
+
   console.log(selectedPdf);
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
@@ -246,8 +287,7 @@ const Contracts = () => {
       >
         <Box
           sx={{
-            width: '90vw',
-            height: '90vh',
+            width: 'fit-content',
             bgcolor: 'background.paper',
             boxShadow: 24,
             p: 4,
