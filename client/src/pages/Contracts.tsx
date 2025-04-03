@@ -174,7 +174,13 @@ const Contracts = () => {
             </IconButton>
           </Stack>
         ) : (
-          <Typography color="text.secondary">No file link yet</Typography>
+          <Button
+            onClick={() => handleAddSignatureFields(params.row.id, '')}
+            sx={{ color: 'text.secondary' }}
+            variant="text"
+          >
+            Click to add signatures
+          </Button>
         ),
     },
     {
