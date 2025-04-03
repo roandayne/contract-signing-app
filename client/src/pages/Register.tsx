@@ -6,22 +6,54 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import axiosInstance from '../axiosInstance';
 import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate, Link } from 'react-router-dom';
 import Image from '../assets/images/register.jpg';
 
+const validationSchema = yup.object({
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Enter a valid email'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password should be at least 6 characters')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+    ),
+  confirmPassword: yup
+    .string()
+    .required('Please confirm your password')
+    .oneOf([yup.ref('password')], 'Passwords must match'),
+});
+
+type FormData = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
+
 const Register = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: yupResolver(validationSchema),
+  });
 
-  const handleRegister = async () => {
+  const onSubmit = async (data: FormData) => {
     try {
       const response = await axiosInstance.post('/api/v1/register', {
-        email,
-        password,
+        email: data.email,
+        password: data.password,
       });
       alert(response.data.message);
     } catch (error) {
@@ -106,6 +138,8 @@ const Register = () => {
         }}
       >
         <Container
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -125,8 +159,9 @@ const Register = () => {
           </Typography>
           <TextField
             label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register('email')}
+            error={!!errors.email}
+            helperText={errors.email?.message}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '24px',
@@ -135,8 +170,22 @@ const Register = () => {
           />
           <TextField
             label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            {...register('password')}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '24px',
+              },
+            }}
+          />
+          <TextField
+            label="Confirm Password"
+            type="password"
+            {...register('confirmPassword')}
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword?.message}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '24px',
@@ -144,7 +193,7 @@ const Register = () => {
             }}
           />
           <Button
-            onClick={handleRegister}
+            type="submit"
             variant="contained"
             sx={{ borderRadius: '24px' }}
           >

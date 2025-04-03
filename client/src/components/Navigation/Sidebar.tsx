@@ -20,6 +20,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
+import { useAuth } from '../../hooks/useAuth';
 const drawerWidth = 240;
 
 interface Props {
@@ -35,6 +36,7 @@ export default function Sidebar(props: Props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isClosing, setIsClosing] = React.useState(false);
+  const { user } = useAuth();
 
   const handleDrawerClose = () => {
     setIsClosing(true);
@@ -52,6 +54,10 @@ export default function Sidebar(props: Props) {
   };
 
   const handleLogout = async () => {
+    if (!user) {
+      navigate('/login')
+    }
+
     try {
       await axiosInstance.delete('/api/v1/logout');
       navigate('/login');

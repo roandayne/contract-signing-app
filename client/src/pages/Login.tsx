@@ -6,23 +6,43 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import axiosInstance from '../axiosInstance';
 import { Link, useNavigate } from 'react-router-dom';
 import Image from '../assets/images/login.jpg';
 import { GoogleLogin } from '@react-oauth/google';
 
+const validationSchema = yup.object({
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Enter a valid email'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password should be at least 6 characters'),
+});
+
+type FormData = {
+  email: string;
+  password: string;
+};
+
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: yupResolver(validationSchema),
+  });
 
-  const handleLogin = async () => {
+  const onSubmit = async (data: FormData) => {
     try {
-      await axiosInstance.post('/api/v1/login', {
-        email,
-        password,
-      });
+      await axiosInstance.post('/api/v1/login', data);
       navigate('/dashboard');
     } catch (error) {
       alert(error);
@@ -106,6 +126,8 @@ const Login = () => {
         }}
       >
         <Container
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -125,8 +147,9 @@ const Login = () => {
           </Typography>
           <TextField
             label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register('email')}
+            error={!!errors.email}
+            helperText={errors.email?.message}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '24px',
@@ -135,8 +158,10 @@ const Login = () => {
           />
           <TextField
             label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            {...register('password')}
+            error={!!errors.password}
+            helperText={errors.password?.message}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '24px',
@@ -144,7 +169,7 @@ const Login = () => {
             }}
           />
           <Button
-            onClick={handleLogin}
+            type="submit"
             variant="contained"
             sx={{ borderRadius: '24px' }}
           >

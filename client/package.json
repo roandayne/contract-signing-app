@@ -9,25 +9,31 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "proxy": "http://localhost:3000",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.0.1",
     "@mui/icons-material": "^5.15.10",
     "@mui/material": "^5.15.10",
+    "@mui/styles": "^6.4.8",
     "@mui/system": "^5.15.10",
     "@mui/x-data-grid": "^6.19.4",
     "@react-oauth/google": "^0.12.1",
+    "@react-pdf/renderer": "^3.4.0",
     "@types/react-pdf": "^7.0.0",
     "@types/react-signature-canvas": "^1.0.7",
     "axios": "^1.6.7",
     "pdfjs-dist": "^4.0.379",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-draggable": "^4.4.6",
+    "react-hook-form": "^7.55.0",
     "react-pdf": "^7.7.1",
     "react-router-dom": "^6.22.1",
     "react-signature-canvas": "^1.1.0-alpha.2",
-    "@react-pdf/renderer": "^3.4.0"
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
