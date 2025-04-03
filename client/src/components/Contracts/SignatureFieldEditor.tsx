@@ -1,244 +1,319 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  IconButton, 
-  CircularProgress,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
-  Paper
-} from '@mui/material';
+import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, IconButton, Paper, Button } from '@mui/material';
+import React, { useRef, useState, useEffect } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
-import DrawIcon from '@mui/icons-material/Draw';
-import TextFieldsIcon from '@mui/icons-material/TextFields';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-type FieldType = 'signature' | 'initial' | 'name' | 'date' | 'text';
+// Set up PDF worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-interface SignatureField {
-  id: string;
+export type FieldType = 'signature' | 'initial' | 'name' | 'date';
+
+export interface SignatureField {
+  pageNum: number;
   x: number;
   y: number;
-  pageNumber: number;
+  width: number;
+  height: number;
   type: FieldType;
-  label?: string;
+  id: number;
 }
 
 interface SignatureFieldEditorProps {
   pdfUrl: string;
-  onSave: (fields: SignatureField[]) => void;
+  onSave?: (fields: SignatureField[]) => void;
+  initialFields?: SignatureField[];
 }
 
-const fieldTypeConfig: Record<FieldType, { icon: JSX.Element, label: string, width: number }> = {
-  signature: { 
-    icon: <DriveFileRenameOutlineIcon />, 
-    label: 'Signature',
-    width: 200
-  },
-  initial: { 
-    icon: <DrawIcon />, 
-    label: 'Initial',
-    width: 100
-  },
-  name: { 
-    icon: <TextFieldsIcon />, 
-    label: 'Full Name',
-    width: 200
-  },
-  date: { 
-    icon: <CalendarTodayIcon />, 
-    label: 'Date',
-    width: 150
-  },
-  text: { 
-    icon: <TextFieldsIcon />, 
-    label: 'Text Field',
-    width: 200
-  }
+const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
+  signature: { width: 200, height: 50 },
+  initial: { width: 100, height: 50 },
+  name: { width: 200, height: 40 },
+  date: { width: 150, height: 40 },
 };
 
-const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({ pdfUrl, onSave }) => {
-  const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
-  const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('signature');
-  const [loading, setLoading] = useState(true);
+export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
+  pdfUrl,
+  onSave,
+  initialFields = [],
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [_containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [signatureFields, setSignatureFields] = useState<SignatureField[]>(initialFields);
+  const [pdfError, setPdfError] = useState<string>('');
+  const [numPages, setNumPages] = useState<number>(1);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('signature');
+  const [scale, setScale] = useState(1);
 
+  // Load initial fields if provided
   useEffect(() => {
-    const updateContainerSize = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight
-        });
-      }
-    };
+    if (initialFields.length > 0) {
+      setSignatureFields(initialFields);
+    }
+  }, [initialFields]);
 
-    updateContainerSize();
-    window.addEventListener('resize', updateContainerSize);
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setIsLoading(false);
+  };
 
-    return () => {
-      window.removeEventListener('resize', updateContainerSize);
-    };
-  }, []);
+  const handleClickOnPdf = (e: React.MouseEvent<HTMLDivElement>): void => {
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
+
+    // Add field at clicked position with dimensions based on type
+    const { width, height } = fieldDimensions[selectedFieldType];
+    addSignatureField(pageNumber, x, y, width, height, selectedFieldType);
+  };
+
+  const addSignatureField = (
+    pageNum: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    type: FieldType
+  ): void => {
+    const newFields = [
+      ...signatureFields,
+      { pageNum, x, y, width, height, type, id: Date.now() },
+    ];
+    setSignatureFields(newFields);
+    if (onSave) {
+      onSave(newFields);
+    }
+  };
+
+  const handleDeleteField = (id: number) => {
+    const newFields = signatureFields.filter(field => field.id !== id);
+    setSignatureFields(newFields);
+    if (onSave) {
+      onSave(newFields);
+    }
+  };
+
+  const handleSave = () => {
+    if (onSave) {
+      onSave(signatureFields);
+    }
+  };
 
   const handleFieldTypeChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newFieldType: FieldType | null,
+    event: React.MouseEvent<HTMLElement>,
+    newFieldType: FieldType | null
   ) => {
     if (newFieldType !== null) {
       setSelectedFieldType(newFieldType);
     }
   };
 
-  const handlePageClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-    const newField: SignatureField = {
-      id: Date.now().toString(),
-      x,
-      y,
-      pageNumber: 1,
-      type: selectedFieldType,
-      label: selectedFieldType === 'text' ? 'Enter text' : undefined
-    };
-
-    setSignatureFields([...signatureFields, newField]);
+  const getFieldLabel = (field: SignatureField): string => {
+    switch (field.type) {
+      case 'signature':
+        return 'Signature';
+      case 'initial':
+        return 'Initial';
+      case 'name':
+        return 'Full Name';
+      case 'date':
+        return 'Date';
+      default:
+        return '';
+    }
   };
 
-  const handleRemoveField = (id: string) => {
-    setSignatureFields(signatureFields.filter(field => field.id !== id));
+  const changePage = (offset: number) => {
+    setPageNumber(prevPageNumber => {
+      const newPageNumber = prevPageNumber + offset;
+      return Math.min(Math.max(1, newPageNumber), numPages);
+    });
   };
 
-  const handleSave = () => {
-    onSave(signatureFields);
+  const handleZoom = (delta: number) => {
+    setScale(prevScale => {
+      const newScale = prevScale + delta;
+      return Math.min(Math.max(0.5, newScale), 2);
+    });
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6">Add Form Fields</Typography>
+    <Box>
+      <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Select field type:
+          </Typography>
           <ToggleButtonGroup
             value={selectedFieldType}
             exclusive
             onChange={handleFieldTypeChange}
+            aria-label="field type"
             size="small"
           >
-            {Object.entries(fieldTypeConfig).map(([type, config]) => (
-              <ToggleButton key={type} value={type}>
-                <Tooltip title={config.label}>
-                  {config.icon}
-                </Tooltip>
-              </ToggleButton>
-            ))}
+            <ToggleButton value="signature" aria-label="signature">
+              Signature
+            </ToggleButton>
+            <ToggleButton value="initial" aria-label="initial">
+              Initial
+            </ToggleButton>
+            <ToggleButton value="name" aria-label="name">
+              Name
+            </ToggleButton>
+            <ToggleButton value="date" aria-label="date">
+              Date
+            </ToggleButton>
           </ToggleButtonGroup>
         </Box>
+
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={() => handleZoom(-0.1)} size="small">
+            <ZoomOutIcon />
+          </IconButton>
+          <Typography variant="body2">
+            {Math.round(scale * 100)}%
+          </Typography>
+          <IconButton onClick={() => handleZoom(0.1)} size="small">
+            <ZoomInIcon />
+          </IconButton>
+        </Box>
+
         <Button
           variant="contained"
           color="primary"
+          startIcon={<SaveIcon />}
           onClick={handleSave}
+          size="small"
         >
           Save Fields
         </Button>
       </Box>
 
-      <Box 
-        ref={containerRef}
+      {pdfError && (
+        <Box color="error.main" mb={2}>
+          Error: {pdfError}
+        </Box>
+      )}
+
+      <Paper 
+        elevation={2} 
         sx={{ 
-          flex: 1, 
-          overflow: 'hidden',
-          position: 'relative',
-          border: '1px solid #ccc',
-          borderRadius: 1,
-          backgroundColor: '#f5f5f5',
+          maxHeight: 'calc(100vh - 200px)',
+          overflow: 'auto',
+          position: 'relative'
         }}
       >
-        <Box
-          onClick={handlePageClick}
-          sx={{ 
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            overflow: 'auto'
-          }}
-        >
-          <Box sx={{ 
-            position: 'relative', 
-            width: '100%',
-            height: '100%',
-            '& iframe': {
-              width: '100%',
-              height: '100%',
-              border: 'none'
+        <Box ref={containerRef} position="relative" onClick={handleClickOnPdf}>
+          {isLoading && (
+            <Box display="flex" justifyContent="center" my={4}>
+              <CircularProgress />
+            </Box>
+          )}
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={(error) => {
+              setPdfError('Failed to load PDF: ' + error.message);
+              setIsLoading(false);
+            }}
+            loading={
+              <Box display="flex" justifyContent="center" my={4}>
+                <CircularProgress />
+              </Box>
             }
-          }}>
-            <iframe 
-              src={`${pdfUrl}#toolbar=0&view=FitH`}
-              title="PDF Viewer"
-              onLoad={() => setLoading(false)}
+          >
+            <Page 
+              pageNumber={pageNumber}
+              scale={scale}
+              loading={
+                <Box display="flex" justifyContent="center" my={4}>
+                  <CircularProgress />
+                </Box>
+              }
             />
-            {signatureFields.map(field => {
-              const config = fieldTypeConfig[field.type];
-              return (
-                <Paper
-                  key={field.id}
-                  elevation={2}
-                  sx={{
-                    position: 'absolute',
-                    left: `${field.x}%`,
-                    top: `${field.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    border: '2px dashed #1976d2',
-                    padding: '10px',
-                    width: config.width,
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    zIndex: 10,
-                    cursor: 'move',
-                  }}
+          </Document>
+          {!isLoading && signatureFields
+            .filter(field => field.pageNum === pageNumber)
+            .map((field) => (
+              <Box
+                key={field.id}
+                position="absolute"
+                left={`${field.x * scale}px`}
+                top={`${field.y * scale}px`}
+                width={`${field.width * scale}px`}
+                height={`${field.height * scale}px`}
+                border="1px dashed red"
+                bgcolor="rgba(255, 0, 0, 0.1)"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 0, 0, 0.2)',
+                  },
+                }}
+              >
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                  width="100%"
+                  position="relative"
                 >
-                  {config.icon}
-                  <Typography variant="caption" sx={{ flex: 1 }}>
-                    {config.label}
-                  </Typography>
                   <IconButton
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRemoveField(field.id);
+                      handleDeleteField(field.id);
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      top: -20,
+                      right: -20,
+                      bgcolor: 'background.paper',
+                      '&:hover': {
+                        bgcolor: 'error.light',
+                      },
                     }}
                   >
-                    <DeleteIcon />
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
-                </Paper>
-              );
-            })}
-          </Box>
+                  <Typography variant="caption" color="textSecondary">
+                    {getFieldLabel(field)}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
         </Box>
-        {loading && (
-          <Box 
-            sx={{ 
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 20
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        )}
+      </Paper>
+
+      <Box mt={2} display="flex" justifyContent="center" alignItems="center" gap={2}>
+        <IconButton 
+          onClick={() => changePage(-1)} 
+          disabled={pageNumber <= 1}
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+        <Typography>
+          Page {pageNumber} of {numPages}
+        </Typography>
+        <IconButton 
+          onClick={() => changePage(1)} 
+          disabled={pageNumber >= numPages}
+        >
+          <ChevronRightIcon />
+        </IconButton>
       </Box>
     </Box>
   );
 };
-
-export default SignatureFieldEditor; 

@@ -1,9 +1,9 @@
 import React from 'react';
-import Sidebar from '../Navigation/Sidebar';
 import Box from '@mui/material/Box';
 import { useAuth } from '../../hooks/useAuth';
 import { CircularProgress } from '@mui/material';
 import { Navigate } from 'react-router-dom';
+import { Sidebar } from '../Navigation/Sidebar';
 
 const Authenticated: React.FC<{ children: React.ReactNode }> = ({
   children,

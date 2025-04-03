@@ -7,10 +7,13 @@ import {
   TextField,
   Paper,
   Stack,
-  Modal
+  Modal,
 } from '@mui/material';
 import { Document, Page, pdfjs } from 'react-pdf';
 import SignaturePad from 'react-signature-canvas';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import axiosInstance from '../axiosInstance';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -22,6 +25,19 @@ interface SignatureField {
   pageNumber: number;
 }
 
+const validationSchema = yup.object({
+  name: yup.string().required('Name is required'),
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Enter a valid email'),
+});
+
+type FormData = {
+  name: string;
+  email: string;
+};
+
 const PublicForm = () => {
   const { formId } = useParams<{ formId: string }>();
   const [formData, setFormData] = useState<any>(null);
@@ -32,8 +48,14 @@ const PublicForm = () => {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [currentFieldId, setCurrentFieldId] = useState<string>('');
   const [sigPad, setSigPad] = useState<any>(null);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: yupResolver(validationSchema),
+  });
 
   useEffect(() => {
     fetchFormData();
@@ -41,7 +63,9 @@ const PublicForm = () => {
 
   const fetchFormData = async () => {
     try {
-      const response = await axiosInstance.get(`/api/v1/forms/${formId}/public`);
+      const response = await axiosInstance.get(
+        `/api/v1/forms/${formId}/public`
+      );
       setFormData(response.data);
       setSignatureFields(response.data.signature_fields || []);
     } catch (error) {
@@ -67,15 +91,17 @@ const PublicForm = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: FormData) => {
     try {
       await axiosInstance.post(`/api/v1/forms/${formId}/submit`, {
-        name,
-        email,
-        signatures: Object.entries(signatures).map(([fieldId, signatureData]) => ({
-          field_id: fieldId,
-          signature_data: signatureData
-        }))
+        name: data.name,
+        email: data.email,
+        signatures: Object.entries(signatures).map(
+          ([fieldId, signatureData]) => ({
+            field_id: fieldId,
+            signature_data: signatureData,
+          })
+        ),
       });
       alert('Form submitted successfully!');
     } catch (error) {
@@ -95,18 +121,25 @@ const PublicForm = () => {
           {formData.name}
         </Typography>
 
-        <Stack spacing={2} sx={{ mb: 4 }}>
+        <Stack
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
+          spacing={2}
+          sx={{ mb: 4 }}
+        >
           <TextField
             label="Your Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            {...register('name')}
+            error={!!errors.name}
+            helperText={errors.name?.message}
             required
           />
           <TextField
             label="Your Email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register('email')}
+            error={!!errors.email}
+            helperText={errors.email?.message}
             required
           />
         </Stack>
@@ -123,8 +156,8 @@ const PublicForm = () => {
                 renderTextLayer={false}
               />
               {signatureFields
-                .filter(field => field.pageNumber === pageNumber)
-                .map(field => (
+                .filter((field) => field.pageNumber === pageNumber)
+                .map((field) => (
                   <Box
                     key={field.id}
                     sx={{
@@ -132,7 +165,9 @@ const PublicForm = () => {
                       left: `${field.x}%`,
                       top: `${field.y}%`,
                       transform: 'translate(-50%, -50%)',
-                      border: signatures[field.id] ? '2px solid #4caf50' : '2px dashed #1976d2',
+                      border: signatures[field.id]
+                        ? '2px solid #4caf50'
+                        : '2px dashed #1976d2',
                       padding: '20px 40px',
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                       cursor: 'pointer',
@@ -140,9 +175,9 @@ const PublicForm = () => {
                     onClick={() => openSignaturePad(field.id)}
                   >
                     {signatures[field.id] ? (
-                      <img 
-                        src={signatures[field.id]} 
-                        alt="Signature" 
+                      <img
+                        src={signatures[field.id]}
+                        alt="Signature"
                         style={{ maxWidth: '200px', maxHeight: '100px' }}
                       />
                     ) : (
@@ -157,7 +192,7 @@ const PublicForm = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 4 }}>
           <Button
             disabled={pageNumber <= 1}
-            onClick={() => setPageNumber(prev => prev - 1)}
+            onClick={() => setPageNumber((prev) => prev - 1)}
           >
             Previous
           </Button>
@@ -166,17 +201,17 @@ const PublicForm = () => {
           </Typography>
           <Button
             disabled={pageNumber >= numPages}
-            onClick={() => setPageNumber(prev => prev + 1)}
+            onClick={() => setPageNumber((prev) => prev + 1)}
           >
             Next
           </Button>
         </Box>
 
         <Button
+          type="submit"
           variant="contained"
           fullWidth
-          onClick={handleSubmit}
-          disabled={!name || !email || Object.keys(signatures).length !== signatureFields.length}
+          disabled={Object.keys(signatures).length !== signatureFields.length}
         >
           Submit Form
         </Button>
@@ -199,7 +234,7 @@ const PublicForm = () => {
             sx={{
               border: '1px solid #ccc',
               backgroundColor: '#fff',
-              mb: 2
+              mb: 2,
             }}
           >
             <SignaturePad
@@ -207,14 +242,12 @@ const PublicForm = () => {
               canvasProps={{
                 width: 550,
                 height: 200,
-                style: { width: '100%', height: '200px' }
+                style: { width: '100%', height: '200px' },
               }}
             />
           </Box>
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button onClick={() => sigPad?.clear()}>
-              Clear
-            </Button>
+            <Button onClick={() => sigPad?.clear()}>Clear</Button>
             <Button
               variant="contained"
               onClick={handleSignatureSave}
@@ -229,4 +262,4 @@ const PublicForm = () => {
   );
 };
 
-export default PublicForm; 
+export default PublicForm;

@@ -1,20 +1,20 @@
 import {
-    DragDropContext,
-    Draggable,
-    DraggableProvided,
-    DropResult,
-    Droppable,
-    DroppableProvided,
+  DragDropContext,
+  Draggable,
+  DraggableProvided,
+  DropResult,
+  Droppable,
+  DroppableProvided,
 } from '@hello-pangea/dnd';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {
-    Box,
-    Button,
-    List,
-    ListItem,
-    Modal,
-    Stack,
-    Typography,
+  Box,
+  Button,
+  List,
+  ListItem,
+  Modal,
+  Stack,
+  Typography,
 } from '@mui/material';
 import React from 'react';
 
@@ -61,7 +61,7 @@ const DragNDropPDF: React.FC<DragNDropPDFProps> = ({
     borderRadius: 2,
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden'
+    overflow: 'hidden',
   };
 
   return (
@@ -76,63 +76,65 @@ const DragNDropPDF: React.FC<DragNDropPDFProps> = ({
           Arrange PDFs in desired order
         </Typography>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="pdfs">
-                {(provided: DroppableProvided) => (
-                  <List
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    sx={{ mb: 2 }}
-                  >
-                    {files.map((file, index) => (
-                      <Draggable
-                        key={file.name}
-                        draggableId={file.name}
-                        index={index}
-                      >
-                        {(provided: DraggableProvided) => (
-                          <ListItem
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="pdfs">
+              {(provided: DroppableProvided) => (
+                <List
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  sx={{ mb: 2 }}
+                >
+                  {files.map((file, index) => (
+                    <Draggable
+                      key={file.name}
+                      draggableId={file.name}
+                      index={index}
+                    >
+                      {(provided: DraggableProvided) => (
+                        <ListItem
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          sx={{
+                            bgcolor: 'grey.100',
+                            mb: 1,
+                            borderRadius: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: 'default',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <Box
+                            {...provided.dragHandleProps}
                             sx={{
-                              bgcolor: 'grey.100',
-                              mb: 1,
-                              borderRadius: 1,
                               display: 'flex',
                               alignItems: 'center',
-                              cursor: 'default',
-                              userSelect: 'none'
+                              cursor: 'grab',
+                              '&:active': { cursor: 'grabbing' },
                             }}
                           >
-                            <Box
-                              {...provided.dragHandleProps}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                cursor: 'grab',
-                                '&:active': { cursor: 'grabbing' }
-                              }}
-                            >
-                              <DragIndicatorIcon sx={{ mr: 2, color: 'grey.500' }} />
-                            </Box>
-                            <Typography>{file.name}</Typography>
-                            <Button 
-                              onClick={() => handleRemoveFile(file)}
-                              sx={{ ml: 'auto' }}
-                              color="error"
-                            >
-                              Remove
-                            </Button>
-                          </ListItem>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </List>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </Box>
+                            <DragIndicatorIcon
+                              sx={{ mr: 2, color: 'grey.500' }}
+                            />
+                          </Box>
+                          <Typography>{file.name}</Typography>
+                          <Button
+                            onClick={() => handleRemoveFile(file)}
+                            sx={{ ml: 'auto' }}
+                            color="error"
+                          >
+                            Remove
+                          </Button>
+                        </ListItem>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </List>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </Box>
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button onClick={() => setIsOpen(false)}>Cancel</Button>
           <Button

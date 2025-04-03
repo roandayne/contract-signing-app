@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_29_153608) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_03_170819) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -71,6 +71,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_29_153608) do
     t.float "position_y"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "page_number"
     t.index ["form_id"], name: "index_signatures_on_form_id"
     t.index ["user_id"], name: "index_signatures_on_user_id"
   end

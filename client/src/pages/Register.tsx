@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Divider,
   Container,
   TextField,
@@ -45,7 +44,7 @@ type FormData = {
 const Register = () => {
   const navigate = useNavigate();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const {
     register,
     handleSubmit,
@@ -55,16 +54,16 @@ const Register = () => {
   });
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const response = await axiosInstance.post('/api/v1/register', {
         email: data.email,
         password: data.password,
       });
-      setIsLoading(false)
+      setIsLoading(false);
       alert(response.data.message);
     } catch (error) {
-      setIsLoading(false)
+      setIsLoading(false);
       alert(error);
     }
   };

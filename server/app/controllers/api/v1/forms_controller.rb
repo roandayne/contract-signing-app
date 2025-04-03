@@ -3,6 +3,12 @@ class Api::V1::FormsController < ApplicationController
     require 'combine_pdf'
     require 'tempfile'
     
+    def signature_fields
+      @form = current_user.forms.find(params[:id])
+      @signatures = @form.signatures
+      render json: @signatures
+    end
+    
     def create
         Rails.logger.debug "Params: #{params.inspect}"
         
@@ -45,8 +51,14 @@ class Api::V1::FormsController < ApplicationController
           Rails.logger.debug "Form attributes before save: #{form.attributes.inspect}"
 
           if form.save
-            # Now that we have saved the record, we can generate the permanent URL
-            form.update(file_url: url_for(form.file))
+            # Generate the URL based on the environment
+            file_url = if Rails.env.development?
+              Rails.application.routes.url_helpers.rails_blob_path(form.file, only_path: true)
+            else
+              url_for(form.file)
+            end
+            
+            form.update(file_url: file_url)
             
             render json: {
               message: "PDFs combined and uploaded successfully",
@@ -72,9 +84,15 @@ class Api::V1::FormsController < ApplicationController
       form = Form.find(params[:id])
 
       if form.file.attached?
+        file_url = if Rails.env.development?
+          Rails.application.routes.url_helpers.rails_blob_path(form.file, only_path: true)
+        else
+          url_for(form.file)
+        end
+
         render json: {
           form: form,
-          file_url: url_for(form.file)
+          file_url: file_url
         }
       else
         render json: { message: "No file attached" }

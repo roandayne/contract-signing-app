@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Container,
   TextField,
   Typography,
@@ -46,13 +45,13 @@ const Login = () => {
   });
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       await axiosInstance.post('/api/v1/login', data);
-      setIsLoading(false)
+      setIsLoading(false);
       navigate('/dashboard');
     } catch (error) {
-      setIsLoading(false)
+      setIsLoading(false);
       alert(error);
     }
   };

@@ -9,14 +9,17 @@ const axiosInstance = axios.create({
   },
 });
 
-axiosInstance.interceptors.response.use(function (response) {
-  return response;
-}, function (error) {
-  console.log("THIS",error)
-  if (error.status === 401) {
-    Navigate({to: '/login'})
+axiosInstance.interceptors.response.use(
+  function (response) {
+    return response;
+  },
+  function (error) {
+    console.log('THIS', error);
+    if (error.status === 401) {
+      Navigate({ to: '/login' });
+    }
+    return Promise.reject(error);
   }
-  return Promise.reject(error);
-});
+);
 
 export default axiosInstance;

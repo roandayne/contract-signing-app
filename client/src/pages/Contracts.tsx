@@ -6,17 +6,20 @@ import {
   Modal,
   Typography,
   TextField,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { GridColDef } from '@mui/x-data-grid';
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
 import DragNDropPDF from '../components/Contracts/DragNDropPDF';
-import SignatureFieldEditor from '../components/Contracts/SignatureFieldEditor';
 import Table from '../components/CustomMui/Table';
-
-const columns = (handleDownload: (url: string) => void, handleAddSignatureFields: (id: string, url: string) => void): GridColDef[] => [
+import { SignatureFieldEditor } from '../components/Contracts/SignatureFieldEditor';
+import { ContractEditor } from '../components/Contracts/ContractEditor';
+const columns = (
+  handleDownload: (url: string) => void,
+  handleAddSignatureFields: (id: string, url: string) => void
+): GridColDef[] => [
   {
     field: 'name',
     headerName: 'Contract Name',
@@ -30,19 +33,22 @@ const columns = (handleDownload: (url: string) => void, handleAddSignatureFields
     flex: 2,
     minWidth: 250,
     editable: false,
-    renderCell: (params) => params.value ? (
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Typography noWrap sx={{ flex: 1 }}>{params.value}</Typography>
-        <IconButton 
-          size="small" 
-          onClick={() => navigator.clipboard.writeText(params.value)}
-        >
-          <ContentCopyIcon fontSize="small" />
-        </IconButton>
-      </Stack>
-    ) : (
-      <Typography color="text.secondary">No signing link yet</Typography>
-    ),
+    renderCell: (params) =>
+      params.value ? (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography noWrap sx={{ flex: 1 }}>
+            {params.value}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => navigator.clipboard.writeText(params.value)}
+          >
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ) : (
+        <Typography color="text.secondary">No signing link yet</Typography>
+      ),
   },
   {
     field: 'actions',
@@ -52,16 +58,18 @@ const columns = (handleDownload: (url: string) => void, handleAddSignatureFields
     editable: false,
     renderCell: (params) => (
       <Stack direction="row" spacing={1}>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           size="small"
-          onClick={() => handleAddSignatureFields(params.row.id, params.row.file_url)}
+          onClick={() =>
+            handleAddSignatureFields(params.row.id, params.row.file_url)
+          }
           disabled={params.row.signing_link}
         >
           Add Signatures
         </Button>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           size="small"
           onClick={() => handleDownload(params.value)}
         >
@@ -69,7 +77,7 @@ const columns = (handleDownload: (url: string) => void, handleAddSignatureFields
         </Button>
       </Stack>
     ),
-  }
+  },
 ];
 
 type DataType = {
@@ -93,7 +101,10 @@ const Contracts = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedPdf, setSelectedPdf] = useState<{ id: string; url: string } | null>(null);
+  const [selectedPdf, setSelectedPdf] = useState<{
+    id: string;
+    url: string;
+  } | null>(null);
   const [isSignatureEditorOpen, setIsSignatureEditorOpen] = useState(false);
   const [publicLink, setPublicLink] = useState<string>('');
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
@@ -112,7 +123,7 @@ const Contracts = () => {
   };
 
   const handleRemoveFile = (fileToRemove: File) => {
-    setFiles(files.filter(file => file !== fileToRemove));
+    setFiles(files.filter((file) => file !== fileToRemove));
   };
 
   const handleDownload = (url: string) => {
@@ -128,16 +139,19 @@ const Contracts = () => {
     if (!selectedPdf) return;
 
     try {
-      await axiosInstance.post(`/api/v1/forms/${selectedPdf.id}/signature_fields`, {
-        signature_fields: fields
-      });
-      
+      await axiosInstance.post(
+        `/api/v1/forms/${selectedPdf.id}/signature_fields`,
+        {
+          signature_fields: fields,
+        }
+      );
+
       // Show the public link modal
       const publicUrl = `${window.location.origin}/form/${selectedPdf.id}`;
       setPublicLink(publicUrl);
       setIsSignatureEditorOpen(false);
       setIsPublicLinkModalOpen(true);
-      
+
       // Update the table data
       fetchContracts();
     } catch (error) {
@@ -162,10 +176,13 @@ const Contracts = () => {
       setFormUrl(response.data.form.file_url);
       setIsOpen(false);
       setFiles([]);
-      
+
       // Open signature editor for the newly uploaded file
       if (response.data.form.id && response.data.form.file_url) {
-        handleAddSignatureFields(response.data.form.id, response.data.form.file_url);
+        handleAddSignatureFields(
+          response.data.form.id,
+          response.data.form.file_url
+        );
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
@@ -174,7 +191,7 @@ const Contracts = () => {
       setIsUploading(false);
     }
   };
-
+  console.log(selectedPdf);
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -199,8 +216,11 @@ const Contracts = () => {
           />
         </Button>
       </Stack>
-      
-      <Table columns={columns(handleDownload, handleAddSignatureFields)} rows={data} />
+
+      <Table
+        columns={columns(handleDownload, handleAddSignatureFields)}
+        rows={data}
+      />
 
       <DragNDropPDF
         files={files}
@@ -224,18 +244,20 @@ const Contracts = () => {
           justifyContent: 'center',
         }}
       >
-        <Box sx={{ 
-          width: '90vw', 
-          height: '90vh', 
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2,
-        }}>
+        <Box
+          sx={{
+            width: '90vw',
+            height: '90vh',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+          }}
+        >
           {selectedPdf && (
-            <SignatureFieldEditor
-              pdfUrl={selectedPdf.url}
-              onSave={handleSaveSignatureFields}
+            <ContractEditor
+              pdfUrl={`${import.meta.env.VITE_API_URL}${selectedPdf.url}`}
+              formId={selectedPdf.id}
             />
           )}
         </Box>
@@ -250,13 +272,15 @@ const Contracts = () => {
           justifyContent: 'center',
         }}
       >
-        <Box sx={{ 
-          width: '600px',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2,
-        }}>
+        <Box
+          sx={{
+            width: '600px',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+          }}
+        >
           <Typography variant="h6" gutterBottom>
             Public Form Link Created
           </Typography>

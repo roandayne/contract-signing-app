@@ -1,7 +1,4 @@
-import {
-    Box,
-    Button
-} from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useState } from 'react';
 import Table from '../components/CustomMui/Table';
@@ -101,17 +98,13 @@ type DataType = {
 const Submissions = () => {
   const [data, _setData] = useState<DataType[]>([]);
 
-
   const handleDownload = (url: string) => {
     window.open(url, '_blank');
   };
 
-
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
-      
       <Table columns={columns(handleDownload)} rows={data} />
-
     </Box>
   );
 };

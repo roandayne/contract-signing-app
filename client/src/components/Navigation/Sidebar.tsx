@@ -31,7 +31,7 @@ interface Props {
   window?: () => Window;
 }
 
-export default function Sidebar(props: Props) {
+export const Sidebar = (props: Props) => {
   const navigate = useNavigate();
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -55,7 +55,7 @@ export default function Sidebar(props: Props) {
 
   const handleLogout = async () => {
     if (!user) {
-      navigate('/login')
+      navigate('/login');
     }
 
     try {
