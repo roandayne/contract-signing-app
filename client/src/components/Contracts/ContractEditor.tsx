@@ -18,7 +18,6 @@ type Signature = {
   signature_type: string
 }
 
-// Convert backend signature format to frontend format
 const convertSignatureToField = (signature: Signature): SignatureField => {
   let type: 'signature' | 'initial' | 'name' | 'date';
   
@@ -46,7 +45,7 @@ const convertSignatureToField = (signature: Signature): SignatureField => {
     y: signature.position_y,
     width: type === 'initial' ? 100 : 200, // Use the same dimensions as in SignatureFieldEditor
     height: type === 'name' || type === 'date' ? 40 : 50,
-    type
+    type,
   };
 };
 
@@ -61,8 +60,14 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
       try {
         setIsLoading(true);
         const response = await axiosInstance.get(`/api/v1/forms/${formId}/signatures`);
-        // Convert backend signatures to frontend fields format
-        const convertedFields = response.data.signatures.map(convertSignatureToField);
+
+        const convertedFields = response.data.signatures.map((signature: Signature) => {
+          const field = convertSignatureToField(signature);
+          return {
+            ...field,
+            isSaved: true
+          };
+        });
         setFields(convertedFields);
       } catch (error) {
         console.error('Error loading signature fields:', error);
@@ -84,8 +89,13 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
         signature_fields: updatedFields
       });
 
-      // Convert backend signatures to frontend fields format
-      const convertedFields = response.data.signatures.map(convertSignatureToField);
+      const convertedFields = response.data.signatures.map((signature: Signature) => {
+        const field = convertSignatureToField(signature);
+        return {
+          ...field,
+          isSaved: true
+        };
+      });
       setFields(convertedFields);
       setSuccessMessage('Signature fields saved successfully');
     } catch (error) {

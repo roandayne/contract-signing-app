@@ -12,7 +12,6 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import axiosInstance from '../../axiosInstance';
 
-// Set up PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export type FieldType = 'signature' | 'initial' | 'name' | 'date';
@@ -58,8 +57,8 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   const [scale, setScale] = useState(1);
   const [activeDragId, setActiveDragId] = useState<number | null>(null);
 
-  // Load initial fields if provided
   useEffect(() => {
+    console.log("initialFields", initialFields)
     if (initialFields.length > 0) {
       setSignatureFields(initialFields);
     }
@@ -71,14 +70,12 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   };
 
   const handleClickOnPdf = (e: React.MouseEvent<HTMLDivElement>): void => {
-    // Don't add new field if clicking on an existing field
     if ((e.target as HTMLElement).closest('.signature-field')) {
       return;
     }
 
     if (!containerRef.current) return;
 
-    // Find the PDF page element
     const pdfPage = containerRef.current.querySelector('.react-pdf__Page');
     if (!pdfPage) return;
 
@@ -86,11 +83,9 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
     const scrollLeft = containerRef.current.scrollLeft || 0;
     const scrollTop = containerRef.current.scrollTop || 0;
 
-    // Calculate position relative to the PDF page
     const x = ((e.clientX - pdfRect.left + scrollLeft) / scale);
     const y = ((e.clientY - pdfRect.top + scrollTop) / scale);
 
-    // Add field at clicked position with dimensions based on type
     const { width, height } = fieldDimensions[selectedFieldType];
     addSignatureField(pageNumber, x, y, width, height, selectedFieldType);
   };
@@ -111,13 +106,11 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   };
 
   const handleDeleteField = async (id: number) => {
-    // Find the field to check if it's saved
     
     const field = signatureFields.find(field => field.id === id);
-    console.log("meow", field)
-    if (!field) return;
+    console.log("meow", signatureFields, id, field)
+    if (!field?.id) return;
 
-    // If the field is not saved (isSaved is false or undefined), just remove it from state
     if (!field.isSaved) {
       console.log("this?")
       const newFields = signatureFields.filter(field => field.id !== id);
@@ -125,21 +118,19 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
       return;
     }
 
-    // For saved fields, make the API call
     try {
+      console.log("here???")
       await axiosInstance.delete(`/api/v1/forms/${formId}/signatures/${id}`);
       const newFields = signatureFields.filter(field => field.id !== id);
       setSignatureFields(newFields);
     } catch (error) {
       console.error('Error deleting signature field:', error);
-      // You might want to show an error message to the user here
     }
   };
 
   const handleSave = () => {
     if (onSave) {
       onSave(signatureFields);
-      // Mark all fields as saved
       const savedFields = signatureFields.map(field => ({ ...field, isSaved: true }));
       setSignatureFields(savedFields);
     }
@@ -200,7 +191,6 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
 
     setSignatureFields(newFields);
     
-    // Make the PATCH request for position updates
     axiosInstance.patch(`/api/v1/forms/${formId}/signatures/${activeDragId}`, {
       signature: {
         position_x: data.x / scale,
@@ -383,10 +373,6 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
                         className="delete-button"
                         size="small"
                         onClick={(e) => {
-                          console.log("here?")
-                          // e.preventDefault();
-                          // e.stopPropagation();
-                          // e.nativeEvent.stopImmediatePropagation();
                           handleDeleteField(field.id);
                         }}
                         sx={{

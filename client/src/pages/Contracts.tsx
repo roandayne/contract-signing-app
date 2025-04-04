@@ -42,11 +42,11 @@ const Contracts = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState<{
-    id: string;
+    id: number;
     url: string;
   } | null>(null);
   const [isSignatureEditorOpen, setIsSignatureEditorOpen] = useState(false);
-  const [publicLink, setPublicLink] = useState<string>('');
+  const [publicLink, _setPublicLink] = useState<string>('');
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const Contracts = () => {
     window.open(url, '_blank');
   };
 
-  const handleAddSignatureFields = (id: string, url: string) => {
+  const handleAddSignatureFields = (id: number, url: string) => {
     setSelectedPdf({ id, url });
     setIsSignatureEditorOpen(true);
   };
@@ -92,7 +92,6 @@ const Contracts = () => {
       setIsOpen(false);
       setFiles([]);
 
-      // Open signature editor for the newly uploaded file
       if (response.data.form.id && response.data.form.file_url) {
         handleAddSignatureFields(
           response.data.form.id,
@@ -109,7 +108,7 @@ const Contracts = () => {
 
   const columns = (
     handleDownload: (url: string) => void,
-    handleAddSignatureFields: (id: string, url: string) => void
+    handleAddSignatureFields: (id: number, url: string) => void
   ): GridColDef[] => [
     {
       field: 'file_name',
@@ -199,8 +198,7 @@ const Contracts = () => {
       ),
     },
   ];
-
-  console.log(selectedPdf);
+  
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
