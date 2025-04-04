@@ -43,8 +43,8 @@ gem 'jsonapi-serializer'
 gem 'dotenv-rails'
 gem 'aws-sdk-s3', '~> 1.142'
 gem 'ruby-rc4', '~> 0.1.5'
-gem 'combine_pdf', '~> 1.0.30'
-
+gem 'combine_pdf', '1.0.29'
+gem 'kaminari'
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"

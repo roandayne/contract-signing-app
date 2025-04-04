@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_03_170819) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_04_150605) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pgcrypto"
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
@@ -59,7 +60,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_03_170819) do
     t.string "file_type", limit: 10, null: false
     t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.datetime "updated_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.string "signing_link"
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
     t.index ["user_id"], name: "index_forms_on_user_id"
+    t.index ["uuid"], name: "index_forms_on_uuid", unique: true
   end
 
   create_table "signatures", force: :cascade do |t|

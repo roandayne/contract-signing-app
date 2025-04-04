@@ -7,7 +7,7 @@ import axiosInstance from '../../axiosInstance';
 
 interface ContractEditorProps {
   pdfUrl: string;
-  formId: number;
+  formUuid: string;
 }
 
 type Signature = {
@@ -44,12 +44,12 @@ const convertSignatureToField = (signature: Signature): SignatureField => {
     x: signature.position_x,
     y: signature.position_y,
     width: type === 'initial' ? 100 : 200, // Use the same dimensions as in SignatureFieldEditor
-    height: type === 'name' || type === 'date' ? 40 : 50,
+    height: type === 'name' || type === 'date' ? 20 : 20,
     type,
   };
 };
 
-export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }) => {
+export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid }) => {
   const [fields, setFields] = useState<SignatureField[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
     const loadSignatureFields = async () => {
       try {
         setIsLoading(true);
-        const response = await axiosInstance.get(`/api/v1/forms/${formId}/signatures`);
+        const response = await axiosInstance.get(`/api/v1/forms/${formUuid}/signatures`);
 
         const convertedFields = response.data.signatures.map((signature: Signature) => {
           const field = convertSignatureToField(signature);
@@ -78,14 +78,14 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
     };
 
     loadSignatureFields();
-  }, [formId]);
+  }, [formUuid]);
 
   const handleSaveFields = async (updatedFields: SignatureField[]) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await axiosInstance.post(`/api/v1/forms/${formId}/signatures`, {
+      const response = await axiosInstance.post(`/api/v1/forms/${formUuid}/signatures`, {
         signature_fields: updatedFields
       });
 
@@ -115,7 +115,7 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formId }
     <Box>
       <SignatureFieldEditor
         pdfUrl={pdfUrl}
-        formId={formId}
+        formUuid={formUuid}
         onSave={handleSaveFields}
         initialFields={fields}
       />

@@ -2,13 +2,13 @@ class Api::V1::SignaturesController < ApplicationController
     include ::AuthorizeApiRequest
     before_action :set_form
 
-    # GET /forms/:form_id/signatures
+    # GET /forms/:uuid/signatures
     def index
       signatures = Signature.where(form_id: @form.id)
       render json: { signatures: signatures }
     end
 
-    # DELETE /forms/:form_id/signatures/:id
+    # DELETE /forms/:uuid/signatures/:id
     def destroy
       signature = Signature.find_by(id: params[:id], form_id: @form.id)
       
@@ -20,7 +20,7 @@ class Api::V1::SignaturesController < ApplicationController
       end
     end
 
-    # POST /forms/:form_id/signatures
+    # POST /forms/:uuid/signatures
     def create
       # Log the incoming parameters for debugging
       Rails.logger.info "Received signature fields: #{signature_params_array.inspect}"
@@ -56,7 +56,7 @@ class Api::V1::SignaturesController < ApplicationController
       end
     end
 
-    # PATCH /forms/:form_id/signatures/:id
+    # PATCH /forms/:uuid/signatures/:id
     def update
       signature = Signature.find_by(id: params[:id], form_id: @form.id)
       
@@ -74,7 +74,7 @@ class Api::V1::SignaturesController < ApplicationController
     private
 
     def set_form
-      @form = Form.find(params[:form_id])
+      @form = Form.find_by!(uuid: params[:form_uuid])
     rescue ActiveRecord::RecordNotFound
       render json: { error: 'Form not found' }, status: :not_found
     end

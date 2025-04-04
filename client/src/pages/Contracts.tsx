@@ -7,6 +7,7 @@ import {
   Typography,
   TextField,
   IconButton,
+  Pagination,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { GridColDef } from '@mui/x-data-grid';
@@ -18,7 +19,7 @@ import { ContractEditor } from '../components/Contracts/ContractEditor';
 import axios from 'axios';
 
 type DataType = {
-  id: string;
+  uuid: string;
   file_name: string;
   signing_link: string;
   file_url: string;
@@ -36,27 +37,38 @@ const shortenLink = (longUrl: string, callback: (shortUrl: string) => void) => {
 
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [rowsPerPage] = useState(10);
   const [shortenedUrls, setShortenedUrls] = useState<Record<string, string>>({});
   const [_formUrl, setFormUrl] = useState<string>();
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState<{
-    id: number;
+    uuid: string;
     url: string;
   } | null>(null);
   const [isSignatureEditorOpen, setIsSignatureEditorOpen] = useState(false);
-  const [publicLink, _setPublicLink] = useState<string>('');
+  const [publicLink, setPublicLink] = useState<string>('');
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContracts();
-  }, []);
+  }, [page]);
 
   const fetchContracts = async () => {
     try {
-      const response = await axiosInstance.get('/api/v1/forms');
-      setData(response.data);
+      const response = await axiosInstance.get('/api/v1/forms', {
+        params: {
+          page,
+          per_page: rowsPerPage
+        }
+      });
+      setData(response.data.forms);
+      setTotalPages(response.data.pagination.total_pages);
     } catch (error) {
       console.error('Error fetching contracts:', error);
     }
@@ -70,9 +82,26 @@ const Contracts = () => {
     window.open(url, '_blank');
   };
 
-  const handleAddSignatureFields = (id: number, url: string) => {
-    setSelectedPdf({ id, url });
+  const handleAddSignatureFields = (uuid: string, url: string) => {
+    setSelectedPdf({ uuid, url });
     setIsSignatureEditorOpen(true);
+  };
+
+  const handleGenerateLink = async (formUuid: string) => {
+    try {
+      const response = await axiosInstance.post(`/api/v1/forms/${formUuid}/generate_link`);
+      const publicLink = response.data.signing_link;
+      setPublicLink(publicLink);
+
+      setData(prevData => prevData.map(item => 
+        item.uuid === formUuid ? { ...item, signing_link: publicLink } : item
+      ));
+
+      setSuccessMessage('Public link generated successfully!');
+    } catch (error) {
+      console.error('Error generating public link:', error);
+      setError('Failed to generate public link');
+    }
   };
 
   const handleFileUpload = async () => {
@@ -92,9 +121,9 @@ const Contracts = () => {
       setIsOpen(false);
       setFiles([]);
 
-      if (response.data.form.id && response.data.form.file_url) {
+      if (response.data.form.uuid && response.data.form.file_url) {
         handleAddSignatureFields(
-          response.data.form.id,
+          response.data.form.uuid,
           response.data.form.file_url
         );
       }
@@ -108,7 +137,8 @@ const Contracts = () => {
 
   const columns = (
     handleDownload: (url: string) => void,
-    handleAddSignatureFields: (id: number, url: string) => void
+    handleAddSignatureFields: (uuid: string, url: string) => void,
+    handleGenerateLink: (formUuid: string) => void
   ): GridColDef[] => [
     {
       field: 'file_name',
@@ -127,7 +157,13 @@ const Contracts = () => {
         params.value ? (
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography noWrap sx={{ flex: 1 }}>
-              {params.value}
+              {shortenedUrls[params.value] || (() => {
+                const fullUrl = params.value;
+                shortenLink(fullUrl, (shortUrl: string) => {
+                  setShortenedUrls((prev: Record<string, string>) => ({...prev, [params.value]: shortUrl}));
+                });
+                return fullUrl;
+              })()}
             </Typography>
             <IconButton
               size="small"
@@ -181,11 +217,20 @@ const Contracts = () => {
             variant="contained"
             size="small"
             onClick={() =>
-              handleAddSignatureFields(params.row.id, params.row.file_url)
+              handleAddSignatureFields(params.row.uuid, params.row.file_url)
             }
             disabled={params.row.signing_link}
           >
             Add Inputs
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => handleGenerateLink(params.row.uuid)}
+            disabled={!params.row.file_url || !params.row.signatures?.length}
+            color="secondary"
+          >
+            Generate Link
           </Button>
           <Button
             variant="contained"
@@ -198,7 +243,11 @@ const Contracts = () => {
       ),
     },
   ];
-  
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -225,9 +274,20 @@ const Contracts = () => {
       </Stack>
 
       <Table
-        columns={columns(handleDownload, handleAddSignatureFields)}
+        columns={columns(handleDownload, handleAddSignatureFields, handleGenerateLink)}
         rows={data}
       />
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          showFirstButton
+          showLastButton
+        />
+      </Box>
 
       <DragNDropPDF
         files={files}
@@ -263,7 +323,7 @@ const Contracts = () => {
           {selectedPdf && (
             <ContractEditor
               pdfUrl={`${import.meta.env.VITE_API_URL}${selectedPdf.url}`}
-              formId={selectedPdf.id}
+              formUuid={selectedPdf.uuid}
             />
           )}
         </Box>

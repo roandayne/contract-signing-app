@@ -3,16 +3,35 @@ class Api::V1::FormsController < ApplicationController
     require 'combine_pdf'
     require 'tempfile'
     
+    before_action :set_form, only: [:show, :generate_link]
+    skip_before_action :authorize_request, only: [:show]
+    
     def signature_fields
-      @form = current_user.forms.find(params[:id])
+      @form = current_user.forms.find(params[:uuid])
       @signatures = @form.signatures
       render json: @signatures
     end
 
     def index
+      page = params[:page].presence || 1
+      per_page = params[:per_page].presence || 10
+    
       forms = current_user.forms
-      render json: forms
-    end
+                          .includes(:signatures)
+                          .order(updated_at: :desc)
+                          .page(page)
+                          .per(per_page)
+    
+      render json: {
+        forms: forms.as_json(include: :signatures),
+        pagination: {
+          current_page: forms.current_page,
+          total_pages: forms.total_pages,
+          total_count: forms.total_count,
+          per_page: forms.limit_value
+        }
+      }
+    end    
     
     def create
         Rails.logger.debug "Params: #{params.inspect}"
@@ -86,26 +105,47 @@ class Api::V1::FormsController < ApplicationController
     end
 
     def show
-      form = Form.find(params[:id])
-
-      if form.file.attached?
+      if @form.file.attached?
         file_url = if Rails.env.development?
-          Rails.application.routes.url_helpers.rails_blob_path(form.file, only_path: true)
+          Rails.application.routes.url_helpers.rails_blob_path(@form.file, only_path: true)
         else
-          url_for(form.file)
+          url_for(@form.file)
         end
 
         render json: {
-          form: form,
-          file_url: file_url
+          form: @form,
+          file_url: file_url,
+          signature_fields: @form.signatures
         }
       else
-        render json: { message: "No file attached" }
+        render json: { error: "No file attached" }, status: :not_found
+      end
+    end
+
+    def generate_link
+      if @form.signatures.empty?
+        render json: { error: 'Form must have signature fields before generating a link' }, status: :unprocessable_entity
+        return
+      end
+
+      # Generate signing link using UUID
+      signing_link = "#{ENV['CLIENT_URL']}/sign/#{@form.uuid}"
+
+      if @form.update(signing_link: signing_link)
+        render json: { signing_link: signing_link }, status: :ok
+      else
+        render json: { error: 'Failed to generate signing link' }, status: :unprocessable_entity
       end
     end
 
     private
       def form_params
         params.permit(files: [])
+      end
+
+      def set_form
+        @form = Form.find_by!(uuid: params[:uuid])
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: 'Form not found' }, status: :not_found
       end
 end

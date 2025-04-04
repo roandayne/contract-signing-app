@@ -26,7 +26,7 @@ Rails.application.routes.draw do
       delete '/logout', to: 'users#logout'
       post '/google-login', to: 'users#google_login'
       get '/auth/check', to: 'users#check_auth'
-      resources :forms, only: [:index, :create, :show] do
+      resources :forms, only: [:index, :create, :show], param: :uuid do
         resources :signatures, only: [:index, :create, :destroy, :update] do
           member do
             post :sign
@@ -34,6 +34,7 @@ Rails.application.routes.draw do
         end
         member do
           get :signature_fields
+          post :generate_link
         end
       end
     end

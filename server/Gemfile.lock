@@ -76,7 +76,7 @@ GEM
       public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
     aws-eventstream (1.3.2)
-    aws-partitions (1.1077.0)
+    aws-partitions (1.1081.0)
     aws-sdk-core (3.222.1)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
@@ -87,7 +87,7 @@ GEM
     aws-sdk-kms (1.99.0)
       aws-sdk-core (~> 3, >= 3.216.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-s3 (1.182.0)
+    aws-sdk-s3 (1.183.0)
       aws-sdk-core (~> 3, >= 3.216.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.5)
@@ -96,12 +96,14 @@ GEM
     base64 (0.2.0)
     bcrypt (3.1.20)
     bcrypt_pbkdf (1.1.1)
+    bcrypt_pbkdf (1.1.1-arm64-darwin)
+    bcrypt_pbkdf (1.1.1-x86_64-darwin)
     benchmark (0.4.0)
     bigdecimal (3.1.9)
     bindex (0.8.1)
     bootsnap (1.18.4)
       msgpack (~> 1.2)
-    brakeman (7.0.0)
+    brakeman (7.0.1)
       racc
     builder (3.3.0)
     capybara (3.40.0)
@@ -113,7 +115,7 @@ GEM
       rack-test (>= 0.6.3)
       regexp_parser (>= 1.5, < 3.0)
       xpath (~> 3.2)
-    combine_pdf (1.0.30)
+    combine_pdf (1.0.29)
       matrix
       ruby-rc4 (>= 0.1.5)
     concurrent-ruby (1.3.5)
@@ -133,16 +135,15 @@ GEM
     erubi (1.13.1)
     et-orbi (1.2.11)
       tzinfo
-    eventmachine (1.0.9.1)
+    eventmachine (1.2.7)
+    faye-websocket (0.11.3)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
     globalid (1.2.1)
       activesupport (>= 6.1)
-    haml (6.3.0)
-      temple (>= 0.8.2)
-      thor
-      tilt
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     importmap-rails (2.1.0)
@@ -150,7 +151,7 @@ GEM
       activesupport (>= 6.0.0)
       railties (>= 6.0.0)
     io-console (0.8.0)
-    irb (1.15.1)
+    irb (1.15.2)
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
@@ -174,9 +175,21 @@ GEM
       sshkit (>= 1.23.0, < 2.0)
       thor (~> 1.3)
       zeitwerk (>= 2.6.18, < 3.0)
+    kaminari (1.2.2)
+      activesupport (>= 4.1.0)
+      kaminari-actionview (= 1.2.2)
+      kaminari-activerecord (= 1.2.2)
+      kaminari-core (= 1.2.2)
+    kaminari-actionview (1.2.2)
+      actionview
+      kaminari-core (= 1.2.2)
+    kaminari-activerecord (1.2.2)
+      activerecord
+      kaminari-core (= 1.2.2)
+    kaminari-core (1.2.2)
     language_server-protocol (3.17.0.4)
     lint_roller (1.1.0)
-    logger (1.6.6)
+    logger (1.7.0)
     loofah (2.24.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
@@ -185,16 +198,15 @@ GEM
       net-imap
       net-pop
       net-smtp
-    mailcatcher (0.2.4)
-      eventmachine
-      haml
-      i18n
-      json
-      mail
-      sinatra
-      skinny (>= 0.1.2)
-      sqlite3-ruby
-      thin
+    mailcatcher (0.10.0)
+      eventmachine (~> 1.0)
+      faye-websocket (~> 0.11.1)
+      mail (~> 2.3)
+      net-smtp
+      rack (~> 2.2)
+      sinatra (~> 3.2)
+      sqlite3 (~> 1.3)
+      thin (~> 1.8)
     marcel (1.0.4)
     matrix (0.4.2)
     mini_mime (1.1.5)
@@ -217,17 +229,32 @@ GEM
       net-protocol
     net-ssh (7.3.0)
     nio4r (2.7.4)
-    nokogiri (1.18.5-x86_64-linux-gnu)
+    nokogiri (1.18.7-aarch64-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.7-aarch64-linux-musl)
+      racc (~> 1.4)
+    nokogiri (1.18.7-arm-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.7-arm-linux-musl)
+      racc (~> 1.4)
+    nokogiri (1.18.7-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.7-x86_64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.7-x86_64-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.7-x86_64-linux-musl)
       racc (~> 1.4)
     ostruct (0.6.1)
     parallel (1.26.3)
-    parser (3.3.7.2)
+    parser (3.3.7.4)
       ast (~> 2.4.1)
       racc
     pg (1.5.9)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
+    prism (1.4.0)
     propshaft (1.1.0)
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
@@ -241,20 +268,19 @@ GEM
       nio4r (~> 2.0)
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.1.12)
+    rack (2.2.13)
     rack-cors (2.0.2)
       rack (>= 2.0.0)
-    rack-protection (4.1.1)
+    rack-protection (3.2.0)
       base64 (>= 0.1.0)
-      logger (>= 1.6.0)
-      rack (>= 3.0.0, < 4)
-    rack-session (2.1.0)
-      base64 (>= 0.1.0)
-      rack (>= 3.0.0)
+      rack (~> 2.2, >= 2.2.4)
+    rack-session (1.0.2)
+      rack (< 3)
     rack-test (2.2.0)
       rack (>= 1.3)
-    rackup (2.2.1)
-      rack (>= 3)
+    rackup (1.0.1)
+      rack (< 3)
+      webrick
     rails (8.0.2)
       actioncable (= 8.0.2)
       actionmailbox (= 8.0.2)
@@ -286,13 +312,13 @@ GEM
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
     rake (13.2.1)
-    rdoc (6.13.0)
+    rdoc (6.13.1)
       psych (>= 4.0.0)
     regexp_parser (2.10.0)
-    reline (0.6.0)
+    reline (0.6.1)
       io-console (~> 0.5)
     rexml (3.4.1)
-    rubocop (1.74.0)
+    rubocop (1.75.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
@@ -300,20 +326,21 @@ GEM
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
-      rubocop-ast (>= 1.38.0, < 2.0)
+      rubocop-ast (>= 1.44.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.41.0)
+    rubocop-ast (1.44.0)
       parser (>= 3.3.7.2)
-    rubocop-performance (1.24.0)
+      prism (~> 1.4)
+    rubocop-performance (1.25.0)
       lint_roller (~> 1.1)
-      rubocop (>= 1.72.1, < 2.0)
+      rubocop (>= 1.75.0, < 2.0)
       rubocop-ast (>= 1.38.0, < 2.0)
-    rubocop-rails (2.30.3)
+    rubocop-rails (2.31.0)
       activesupport (>= 4.2.0)
       lint_roller (~> 1.1)
       rack (>= 1.1)
-      rubocop (>= 1.72.1, < 2.0)
+      rubocop (>= 1.75.0, < 2.0)
       rubocop-ast (>= 1.38.0, < 2.0)
     rubocop-rails-omakase (1.1.0)
       rubocop (>= 1.72)
@@ -330,16 +357,11 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
-    sinatra (4.1.1)
-      logger (>= 1.6.0)
+    sinatra (3.2.0)
       mustermann (~> 3.0)
-      rack (>= 3.0.0, < 4)
-      rack-protection (= 4.1.1)
-      rack-session (>= 2.0.0, < 3)
+      rack (~> 2.2, >= 2.2.4)
+      rack-protection (= 3.2.0)
       tilt (~> 2.0)
-    skinny (0.2.4)
-      eventmachine (~> 1.0.0)
-      thin (>= 1.5, < 1.7)
     solid_cable (3.0.7)
       actioncable (>= 7.2)
       activejob (>= 7.2)
@@ -356,9 +378,11 @@ GEM
       fugit (~> 1.11.0)
       railties (>= 7.1)
       thor (~> 1.3.1)
-    sqlite3 (2.6.0-x86_64-linux-gnu)
-    sqlite3-ruby (1.3.3)
-      sqlite3 (>= 1.3.3)
+    sqlite3 (1.7.3-aarch64-linux)
+    sqlite3 (1.7.3-arm-linux)
+    sqlite3 (1.7.3-arm64-darwin)
+    sqlite3 (1.7.3-x86_64-darwin)
+    sqlite3 (1.7.3-x86_64-linux)
     sshkit (1.24.0)
       base64
       logger
@@ -368,13 +392,16 @@ GEM
       ostruct
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
-    stringio (3.1.5)
-    temple (0.10.3)
-    thin (1.6.2)
-      daemons (>= 1.0.9)
-      eventmachine (>= 1.0.0)
-      rack (>= 1.0.0)
+    stringio (3.1.6)
+    thin (1.8.2)
+      daemons (~> 1.0, >= 1.0.9)
+      eventmachine (~> 1.0, >= 1.0.4)
+      rack (>= 1, < 3)
     thor (1.3.2)
+    thruster (0.1.12)
+    thruster (0.1.12-aarch64-linux)
+    thruster (0.1.12-arm64-darwin)
+    thruster (0.1.12-x86_64-darwin)
     thruster (0.1.12-x86_64-linux)
     tilt (2.6.0)
     timeout (0.4.3)
@@ -393,6 +420,7 @@ GEM
       activemodel (>= 6.0.0)
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
+    webrick (1.9.1)
     websocket (1.2.11)
     websocket-driver (0.7.7)
       base64
@@ -403,8 +431,16 @@ GEM
     zeitwerk (2.7.2)
 
 PLATFORMS
+  aarch64-linux
+  aarch64-linux-gnu
+  aarch64-linux-musl
+  arm-linux
+  arm-linux-gnu
+  arm-linux-musl
+  arm64-darwin
+  x86_64-darwin
   x86_64-linux
-  x86_64-linux-gnu
+  x86_64-linux-musl
 
 DEPENDENCIES
   aws-sdk-s3 (~> 1.142)
@@ -412,7 +448,7 @@ DEPENDENCIES
   bootsnap
   brakeman
   capybara
-  combine_pdf (~> 1.0.30)
+  combine_pdf (= 1.0.29)
   debug
   dotenv-rails
   importmap-rails
@@ -420,6 +456,7 @@ DEPENDENCIES
   jsonapi-serializer
   jwt
   kamal
+  kaminari
   mailcatcher
   pg (~> 1.5.0)
   propshaft
@@ -439,4 +476,4 @@ DEPENDENCIES
   web-console
 
 BUNDLED WITH
-   2.4.19
+   2.6.6

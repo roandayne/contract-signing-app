@@ -29,21 +29,21 @@ export interface SignatureField {
 
 interface SignatureFieldEditorProps {
   pdfUrl: string;
-  formId: number;
+  formUuid: string;
   onSave?: (fields: SignatureField[]) => void;
   initialFields?: SignatureField[];
 }
 
 const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
-  signature: { width: 200, height: 35 },
-  initial: { width: 100, height: 35 },
-  name: { width: 200, height: 30 },
-  date: { width: 150, height: 30 },
+  signature: { width: 200, height: 20 },
+  initial: { width: 100, height: 20 },
+  name: { width: 200, height: 20 },
+  date: { width: 150, height: 20 },
 };
 
 export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   pdfUrl,
-  formId,
+  formUuid,
   onSave,
   initialFields = [],
 }) => {
@@ -106,7 +106,6 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   };
 
   const handleDeleteField = async (id: number) => {
-    
     const field = signatureFields.find(field => field.id === id);
     console.log("meow", signatureFields, id, field)
     if (!field?.id) return;
@@ -120,7 +119,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
 
     try {
       console.log("here???")
-      await axiosInstance.delete(`/api/v1/forms/${formId}/signatures/${id}`);
+      await axiosInstance.delete(`/api/v1/forms/${formUuid}/signatures/${id}`);
       const newFields = signatureFields.filter(field => field.id !== id);
       setSignatureFields(newFields);
     } catch (error) {
@@ -191,7 +190,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
 
     setSignatureFields(newFields);
     
-    axiosInstance.patch(`/api/v1/forms/${formId}/signatures/${activeDragId}`, {
+    axiosInstance.patch(`/api/v1/forms/${formUuid}/signatures/${activeDragId}`, {
       signature: {
         position_x: data.x / scale,
         position_y: data.y / scale,

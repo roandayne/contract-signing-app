@@ -8,6 +8,7 @@ import Guest from './components/Template/Guest';
 import Authenticated from './components/Template/Authenticated';
 import Contracts from './pages/Contracts';
 import Submissions from './pages/Submissions';
+import PublicForm from './pages/PublicForm';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
             </Authenticated>
           }
         />
+        <Route path="/sign/:formId" element={<PublicForm />} />
         <Route path="*" element={<Dashboard />} />
       </Routes>
     </Box>

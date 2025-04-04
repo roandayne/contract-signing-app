@@ -64,9 +64,9 @@ const PublicForm = () => {
   const fetchFormData = async () => {
     try {
       const response = await axiosInstance.get(
-        `/api/v1/forms/${formId}/public`
+        `/api/v1/forms/${formId}`
       );
-      setFormData(response.data);
+      setFormData(response.data.form);
       setSignatureFields(response.data.signature_fields || []);
     } catch (error) {
       console.error('Error fetching form:', error);

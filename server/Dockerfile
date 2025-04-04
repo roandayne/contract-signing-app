@@ -25,6 +25,8 @@ RUN apt-get update -qq && \
 
 WORKDIR /app
 
+RUN gem install bundler -v 2.6.6
+
 # Set development environment
 ENV RAILS_ENV="development" \
     BUNDLE_PATH="/usr/local/bundle"
