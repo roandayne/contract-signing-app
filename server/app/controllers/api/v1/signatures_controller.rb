@@ -81,9 +81,9 @@ class Api::V1::SignaturesController < ApplicationController
         ActiveRecord::Base.transaction do
           Rails.logger.info "Received raw params: #{params.inspect}"
           
-          # Initialize empty arrays for signatures and text fields
+          # Initialize empty arrays for signatures and type fields
           signatures_data = []
-          text_fields_data = []
+          type_fields_data = []
           
           # Process signatures if present
           if sign_params[:signatures_attributes].present?
@@ -106,9 +106,9 @@ class Api::V1::SignaturesController < ApplicationController
             end
           end
           
-          # Process text fields if present
-          if sign_params[:text_fields_attributes].present?
-            sign_params[:text_fields_attributes].each do |_key, field|
+          # Process type fields if present
+          if sign_params[:type_fields_attributes].present?
+            sign_params[:type_fields_attributes].each do |_key, field|
               field_hash = {
                 "name" => field[:name].to_s,
                 "value" => field[:value].to_s,
@@ -117,14 +117,14 @@ class Api::V1::SignaturesController < ApplicationController
                 "width" => field[:width].to_f,
                 "height" => field[:height].to_f
               }
-              text_fields_data << field_hash
+              type_fields_data << field_hash
             end
           end
           
           # Create the annotations data hash and serialize it
           annotations_data = {
             "signatures" => signatures_data,
-            "text_fields" => text_fields_data
+            "type_fields" => type_fields_data
           }
           
           Rails.logger.info "Formatted annotations data: #{annotations_data.inspect}"
@@ -219,7 +219,7 @@ class Api::V1::SignaturesController < ApplicationController
         :signer_name,
         :signer_email,
         signatures_attributes: [:field_id, :signature_data, :position_x, :position_y, :width, :height],
-        text_fields_attributes: [:name, :value, :position_x, :position_y, :width, :height]
+        type_fields_attributes: [:name, :value, :position_x, :position_y, :width, :height]
       )
     end
 end

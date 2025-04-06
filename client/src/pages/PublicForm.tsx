@@ -34,7 +34,7 @@ interface Field {
   position_x: number;
   position_y: number;
   signature_data: string | null;
-  signature_type: 'text' | 'date' | 'draw';
+  signature_type: 'type' | 'date' | 'draw';
   name: string;
   width: number;
   height?: number;
@@ -127,8 +127,8 @@ console.log(sigPadRefs.current)
     setPdfError('Failed to load PDF document. Please try again later.');
   };
 
-  const handleChange = (name: string, value: string) => {
-    setFormValues((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (fieldId: number, value: string) => {
+    setFormValues((prev) => ({ ...prev, [fieldId]: value }));
   };
 
   const handleSignaturePadRef = useCallback((ref: SignatureCanvas | null) => {
@@ -162,29 +162,86 @@ console.log(sigPadRefs.current)
   };
 
   const renderField = (field: Field) => {
+    const getFieldDimensions = (type: string) => {
+      switch (type) {
+        case 'draw':
+          return { width: 200, height: 20 };
+        case 'type':
+          return { width: 200, height: 20 };
+        case 'date':
+          return { width: 150, height: 20 };
+        default:
+          return { width: 200, height: 20 };
+      }
+    };
+
+    const dimensions = getFieldDimensions(field.signature_type);
+    
     const commonStyle = {
       position: 'absolute',
       top: `${field.position_y}px`,
       left: `${field.position_x}px`,
-      width: `${field.width}px`,
+      width: `${dimensions.width}px`,
+      height: `${dimensions.height}px`,
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      padding: '8px',
+      padding: '0px',
       border: '1px solid #ccc',
+      transform: 'translate(0, 0)',
+      zIndex: 1000,
     };
 
     console.log('Rendering field:', field);
 
     switch (field.signature_type) {
-      case 'text':
+      case 'type':
+        return (
+          <TextField
+            key={field.id}
+            type="text"
+            name={`field_${field.id}`}
+            value={formValues[field.id] || ''}
+            onChange={(e) => handleChange(field.id, e.target.value)}
+            sx={{
+              ...commonStyle,
+              '& .MuiOutlinedInput-root': {
+                height: '20px',
+                padding: 0,
+                '& input': {
+                  padding: '0 5px',
+                  height: '20px',
+                }
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: '1px solid #ccc'
+              }
+            }}
+            variant="outlined"
+            size="small"
+          />
+        );
       case 'date':
         return (
           <TextField
             key={field.id}
-            type={field.signature_type}
-            name={field.name}
-            value={formValues[field.name] || ''}
-            onChange={(e) => handleChange(field.name, e.target.value)}
-            sx={commonStyle}
+            type="date"
+            name={`field_${field.id}`}
+            value={formValues[field.id] || ''}
+            onChange={(e) => handleChange(field.id, e.target.value)}
+            sx={{
+              ...commonStyle,
+              '& .MuiOutlinedInput-root': {
+                height: '20px',
+                padding: 0,
+                '& input': {
+                  padding: '0 5px',
+                  height: '20px',
+                }
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: '1px solid #ccc'
+              }
+            }}
+            variant="outlined"
             size="small"
           />
         );
@@ -194,7 +251,7 @@ console.log(sigPadRefs.current)
             key={field.id}
             sx={{
               ...commonStyle,
-              height: field.height || 100,
+              height: dimensions.height || "20px",
               cursor: 'pointer',
               border: signatures[field.id] ? '2px solid #4caf50' : '2px dashed #1976d2',
             }}
@@ -237,15 +294,15 @@ console.log(sigPadRefs.current)
         formData.append(`signature[signatures_attributes][${index}][height]`, (field?.height || 100).toString());
       });
 
-      // Add text fields
+      // Add type fields
       Object.entries(formValues).forEach(([name, value], index) => {
         const field = fields.find(f => f.name === name);
-        formData.append(`signature[text_fields_attributes][${index}][name]`, name);
-        formData.append(`signature[text_fields_attributes][${index}][value]`, value);
-        formData.append(`signature[text_fields_attributes][${index}][position_x]`, (field?.position_x || 0).toString());
-        formData.append(`signature[text_fields_attributes][${index}][position_y]`, (field?.position_y || 0).toString());
-        formData.append(`signature[text_fields_attributes][${index}][width]`, (field?.width || 100).toString());
-        formData.append(`signature[text_fields_attributes][${index}][height]`, (field?.height || 100).toString());
+        formData.append(`signature[type_fields_attributes][${index}][name]`, name);
+        formData.append(`signature[type_fields_attributes][${index}][value]`, value);
+        formData.append(`signature[type_fields_attributes][${index}][position_x]`, (field?.position_x || 0).toString());
+        formData.append(`signature[type_fields_attributes][${index}][position_y]`, (field?.position_y || 0).toString());
+        formData.append(`signature[type_fields_attributes][${index}][width]`, (field?.width || 100).toString());
+        formData.append(`signature[type_fields_attributes][${index}][height]`, (field?.height || 100).toString());
       });
 
       // Log the form data for debugging
@@ -338,16 +395,18 @@ console.log(sigPadRefs.current)
                 onLoadError={handleDocumentLoadError}
                 loading={<Typography>Loading PDF document...</Typography>}
               >
-                <Page
-                  pageNumber={pageNumber}
-                  renderAnnotationLayer={false}
-                  renderTextLayer={false}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Page
+                    pageNumber={pageNumber}
+                    renderAnnotationLayer={false}
+                    renderTextLayer={false}
+                    scale={1}
+                  />
+                  {fields
+                    .filter((field) => field.page_number === pageNumber)
+                    .map((field) => renderField(field))}
+                </div>
               </Document>
-              
-              {fields
-                .filter((field) => field.page_number === pageNumber)
-                .map((field) => renderField(field))}
             </Box>
           )}
         </Box>
