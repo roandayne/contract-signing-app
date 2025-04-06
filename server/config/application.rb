@@ -26,5 +26,13 @@ module Server
 
     # Add lib to autoload paths
     config.autoload_paths << Rails.root.join('lib')
+
+    # Set the host for URL generation
+    config.after_initialize do
+      Rails.application.routes.default_url_options = {
+        host: ENV['HOST_URL'] || 'localhost:3000',
+        protocol: ENV['HOST_PROTOCOL'] || 'http'
+      }
+    end
   end
 end

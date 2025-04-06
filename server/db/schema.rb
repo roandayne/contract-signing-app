@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_04_150605) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_05_213254) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -80,6 +80,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_04_150605) do
     t.index ["user_id"], name: "index_signatures_on_user_id"
   end
 
+  create_table "submissions", force: :cascade do |t|
+    t.bigint "form_id", null: false
+    t.bigint "user_id"
+    t.string "signer_name", null: false
+    t.string "signer_email"
+    t.string "status", default: "completed"
+    t.text "annotations_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "signed_pdf_url", limit: 512
+    t.index ["form_id", "signer_email"], name: "index_submissions_on_form_id_and_signer_email", unique: true
+    t.index ["form_id"], name: "index_submissions_on_form_id"
+    t.index ["user_id"], name: "index_submissions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email"
     t.string "password_digest"
@@ -98,4 +113,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_04_150605) do
   add_foreign_key "forms", "users", on_delete: :cascade
   add_foreign_key "signatures", "forms"
   add_foreign_key "signatures", "users"
+  add_foreign_key "submissions", "forms"
+  add_foreign_key "submissions", "users"
 end
