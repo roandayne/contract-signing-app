@@ -94,7 +94,8 @@ class Api::V1::SignaturesController < ApplicationController
                 "position_x" => sig[:position_x].to_f,
                 "position_y" => sig[:position_y].to_f,
                 "width" => sig[:width].to_f,
-                "height" => sig[:height].to_f
+                "height" => sig[:height].to_f,
+                "page_number" => sig[:page_number].to_i
               }
               signatures_data << signature_hash
               
@@ -115,7 +116,8 @@ class Api::V1::SignaturesController < ApplicationController
                 "position_x" => field[:position_x].to_f,
                 "position_y" => field[:position_y].to_f,
                 "width" => field[:width].to_f,
-                "height" => field[:height].to_f
+                "height" => field[:height].to_f,
+                "page_number" => field[:page_number].to_i
               }
               type_fields_data << field_hash
             end
@@ -218,8 +220,8 @@ class Api::V1::SignaturesController < ApplicationController
       params.require(:signature).permit(
         :signer_name,
         :signer_email,
-        signatures_attributes: [:field_id, :signature_data, :position_x, :position_y, :width, :height],
-        type_fields_attributes: [:name, :value, :position_x, :position_y, :width, :height]
+        signatures_attributes: [:field_id, :signature_data, :position_x, :position_y, :width, :height, :page_number],
+        type_fields_attributes: [:name, :value, :position_x, :position_y, :width, :height, :page_number]
       )
     end
 end

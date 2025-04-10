@@ -43,15 +43,22 @@ class Submission < ApplicationRecord
         # Process signatures
         annotations['signatures']&.each do |sig|
           Rails.logger.debug "Processing signature with data: #{sig.inspect}"
-          page_number = sig['page_number'].to_i - 1  # Convert to 0-based index
-          Rails.logger.debug "Placing signature on page #{page_number}"
+          
+          # Safely convert page number to 0-based index, with 0 as default if missing/invalid
+          raw_page_number = sig['page_number']
+          Rails.logger.debug "Raw page number from signature: #{raw_page_number.inspect}"
+          
+          # Ensure we have a valid page number, default to first page (0) if invalid
+          page_number = raw_page_number.to_i > 0 ? raw_page_number.to_i - 1 : 0
+          
+          Rails.logger.debug "Placing signature on page #{page_number+1} (0-indexed: #{page_number})"
           
           # Keep track of the first signature's page
           first_signature_page ||= page_number if sig['signature_data'].present?
           
           # Ensure page exists
           if page_number >= doc.pages.count
-            Rails.logger.error "Page #{page_number} does not exist in document with #{doc.pages.count} pages"
+            Rails.logger.error "Page #{page_number+1} does not exist in document with #{doc.pages.count} pages"
             next
           end
           
@@ -76,18 +83,31 @@ class Submission < ApplicationRecord
             
             # Combine the content streams
             page.contents = contents ? "#{contents}\n#{new_content}" : new_content
+            
+            # Add page number below the signature
+            display_page_number = page_number + 1
+            page_number_text = "Page #{display_page_number}"
+            text_y = page.box(:media).height - sig['position_y'] - sig['height'] - 10
+            page_number_content = "q\nBT\n/Helvetica 8 Tf\n0 0 0 rg\n#{sig['position_x']} #{text_y} Td\n(#{page_number_text}) Tj\nET\nQ\n"
+            
+            # Combine with existing content
+            page.contents = "#{page.contents}\n#{page_number_content}"
           end
         end
         
         # Process type fields
         annotations['type_fields']&.each do |field|
           Rails.logger.debug "Processing type field with data: #{field.inspect}"
-          page_number = field['page_number'].to_i - 1  # Convert to 0-based index
-          Rails.logger.debug "Placing type field on page #{page_number}"
+          
+          # Safely convert page number to 0-based index, with 0 as default if missing/invalid
+          raw_page_number = field['page_number']
+          page_number = raw_page_number.to_i > 0 ? raw_page_number.to_i - 1 : 0
+          
+          Rails.logger.debug "Placing type field on page #{page_number+1} (0-indexed: #{page_number})"
           
           # Ensure page exists
           if page_number >= doc.pages.count
-            Rails.logger.error "Page #{page_number} does not exist in document with #{doc.pages.count} pages"
+            Rails.logger.error "Page #{page_number+1} does not exist in document with #{doc.pages.count} pages"
             next
           end
           
