@@ -32,6 +32,7 @@ interface SignatureFieldEditorProps {
   formUuid: string;
   onSave?: (fields: SignatureField[]) => void;
   initialFields?: SignatureField[];
+  fetchContracts: () => void;
 }
 
 const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
@@ -46,6 +47,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   formUuid,
   onSave,
   initialFields = [],
+  fetchContracts
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [signatureFields, setSignatureFields] = useState<SignatureField[]>(initialFields);
@@ -131,6 +133,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
     if (onSave) {
       onSave(signatureFields);
       const savedFields = signatureFields.map(field => ({ ...field, isSaved: true }));
+      fetchContracts()
       setSignatureFields(savedFields);
     }
   };

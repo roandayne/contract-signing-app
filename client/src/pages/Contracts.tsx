@@ -322,6 +322,7 @@ const Contracts = () => {
         >
           {selectedPdf && (
             <ContractEditor
+              fetchContracts={fetchContracts}
               pdfUrl={`${import.meta.env.VITE_API_URL}${selectedPdf.url}`}
               formUuid={selectedPdf.uuid}
             />
