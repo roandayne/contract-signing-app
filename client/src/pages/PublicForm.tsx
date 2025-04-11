@@ -128,6 +128,7 @@ console.log(sigPadRefs.current)
   };
 
   const handleChange = (fieldId: number, value: string) => {
+    setCurrentFieldId(fieldId.toString());
     setFormValues((prev) => ({ ...prev, [fieldId]: value }));
   };
 
@@ -162,6 +163,11 @@ console.log(sigPadRefs.current)
   };
 
   const renderField = (field: Field) => {
+    // Set a default currentFieldId if not set already
+    if (!currentFieldId && fields.length > 0) {
+      setCurrentFieldId(fields[0].id.toString());
+    }
+
     const getFieldDimensions = (type: string) => {
       switch (type) {
         case 'draw':
@@ -201,6 +207,7 @@ console.log(sigPadRefs.current)
             name={`field_${field.id}`}
             value={formValues[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
+            onClick={() => setCurrentFieldId(field.id.toString())}
             sx={{
               ...commonStyle,
               '& .MuiOutlinedInput-root': {
@@ -227,6 +234,7 @@ console.log(sigPadRefs.current)
             name={`field_${field.id}`}
             value={formValues[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
+            onClick={() => setCurrentFieldId(field.id.toString())}
             sx={{
               ...commonStyle,
               '& .MuiOutlinedInput-root': {
@@ -278,6 +286,13 @@ console.log(sigPadRefs.current)
 
   const handleSubmitForm = async (signerData: SignerFormData) => {
     try {
+      // Ensure currentFieldId is set if empty by using the first available field
+      if (!currentFieldId && fields.length > 0) {
+        setCurrentFieldId(fields[0].id.toString());
+      }
+      
+      console.log('Submitting form with currentFieldId:', currentFieldId);
+
       // Create form data
       const formData = new FormData();
       formData.append('signature[signer_name]', signerData.signerName);
@@ -292,17 +307,21 @@ console.log(sigPadRefs.current)
         formData.append(`signature[signatures_attributes][${index}][position_y]`, (field?.position_y || 0).toString());
         formData.append(`signature[signatures_attributes][${index}][width]`, (field?.width || 100).toString());
         formData.append(`signature[signatures_attributes][${index}][height]`, (field?.height || 100).toString());
+        formData.append(`signature[signatures_attributes][${index}][page_number]`, (field?.page_number || 1).toString());
       });
 
       // Add type fields
-      Object.entries(formValues).forEach(([name, value], index) => {
-        const field = fields.find(f => f.name === name);
-        formData.append(`signature[type_fields_attributes][${index}][name]`, name);
-        formData.append(`signature[type_fields_attributes][${index}][value]`, value);
-        formData.append(`signature[type_fields_attributes][${index}][position_x]`, (field?.position_x || 0).toString());
-        formData.append(`signature[type_fields_attributes][${index}][position_y]`, (field?.position_y || 0).toString());
-        formData.append(`signature[type_fields_attributes][${index}][width]`, (field?.width || 100).toString());
-        formData.append(`signature[type_fields_attributes][${index}][height]`, (field?.height || 100).toString());
+      Object.entries(formValues).forEach(([fieldId, value], index) => {
+        const field = fields.find(f => f.id.toString() === fieldId);
+        if (field) {
+          formData.append(`signature[type_fields_attributes][${index}][field_id]`, fieldId);
+          formData.append(`signature[type_fields_attributes][${index}][value]`, value);
+          formData.append(`signature[type_fields_attributes][${index}][position_x]`, (field.position_x || 0).toString());
+          formData.append(`signature[type_fields_attributes][${index}][position_y]`, (field.position_y || 0).toString());
+          formData.append(`signature[type_fields_attributes][${index}][width]`, (field.width || 100).toString());
+          formData.append(`signature[type_fields_attributes][${index}][height]`, (field.height || 100).toString());
+          formData.append(`signature[type_fields_attributes][${index}][page_number]`, (field.page_number || 1).toString());
+        }
       });
 
       // Log the form data for debugging

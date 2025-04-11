@@ -97,6 +97,12 @@ class Api::V1::SignaturesController < ApplicationController
                 "height" => sig[:height].to_f,
                 "page_number" => sig[:page_number].to_i
               }
+              
+              # Make sure page_number is an integer and not nil
+              if signature_hash["page_number"].nil? || signature_hash["page_number"] <= 0
+                signature_hash["page_number"] = 1
+              end
+              
               signatures_data << signature_hash
               
               # Update the current signature if it matches
@@ -119,6 +125,12 @@ class Api::V1::SignaturesController < ApplicationController
                 "height" => field[:height].to_f,
                 "page_number" => field[:page_number].to_i
               }
+              
+              # Make sure page_number is an integer and not nil
+              if field_hash["page_number"].nil? || field_hash["page_number"] <= 0
+                field_hash["page_number"] = 1
+              end
+              
               type_fields_data << field_hash
             end
           end
