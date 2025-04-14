@@ -26,6 +26,13 @@ Rails.application.routes.draw do
       delete '/logout', to: 'users#logout'
       post '/google-login', to: 'users#google_login'
       get '/auth/check', to: 'users#check_auth'
+      
+      resources :submissions, only: [:index] do
+        collection do
+          get 'forms/:form_uuid/components/:id/download', to: 'submissions#download_component'
+        end
+      end
+      
       resources :forms, only: [:index, :create, :show], param: :uuid do
         resources :signatures, only: [:index, :create, :destroy, :update] do
           member do
@@ -35,6 +42,8 @@ Rails.application.routes.draw do
         member do
           get :signature_fields
           post :generate_link
+          get 'components/:component_id/download', to: 'forms#download_component'
+          get 'components/download_all', to: 'forms#download_all_components'
         end
       end
     end

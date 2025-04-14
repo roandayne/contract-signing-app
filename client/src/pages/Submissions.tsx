@@ -1,110 +1,205 @@
-import { Box, Button } from '@mui/material';
+import { Box, Button, Stack, Typography, Card, CardContent } from '@mui/material';
 import { GridColDef } from '@mui/x-data-grid';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Table from '../components/CustomMui/Table';
+import axiosInstance from '../axiosInstance';
+import DownloadIcon from '@mui/icons-material/Download';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
-const columns = (handleDownload: (url: string) => void): GridColDef[] => [
-  {
-    field: 'first_name',
-    headerName: 'First Name',
-    width: 150,
-    editable: false,
-  },
-  {
-    field: 'last_name',
-    headerName: 'Last Name',
-    width: 150,
-    editable: false,
-  },
-  {
-    field: 'clae_onboarding_link',
-    headerName: 'Clae Onboarding Link',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-  {
-    field: 'clae_ibo',
-    headerName: 'Clae IBO',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-  {
-    field: 'direct_deposit',
-    headerName: 'Direct Deposit',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-  {
-    field: 'vistra',
-    headerName: 'VISTRA',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-  {
-    field: 'perch_cod',
-    headerName: 'Perch COD',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-  {
-    field: 'nexamp_attestation',
-    headerName: 'Nexamp Attestation',
-    width: 150,
-    editable: false,
-    renderCell: (params) => (
-      <Button variant="contained" onClick={() => handleDownload(params.value)}>
-        Download
-      </Button>
-    ),
-  },
-];
+type FormComponent = {
+  id: number;
+  original_filename: string;
+  page_count: number;
+  start_page: number;
+  end_page: number;
+  order_index: number;
+};
 
-type DataType = {
-  first_name: string;
-  last_name: string;
-  perch_cod: string;
-  nexamp_attestation: string;
-  clae_onboarding_link: string;
-  clae_ibo: string;
-  vistra: string;
-  direct_deposit: string;
+type Form = {
+  uuid: string;
+  file_name: string;
+  form_components: FormComponent[];
+};
+
+type Submission = {
+  id: number;
+  signer_name: string;
+  signer_email: string;
+  created_at: string;
+  submission_count: number;
+};
+
+type GroupedSubmission = {
+  form: Form;
+  submissions: Submission[];
+};
+
+const SubmissionTable = ({ 
+  form,
+  submissions,
+  onDownloadComponent 
+}: { 
+  form: Form;
+  submissions: Submission[];
+  onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number) => void;
+}) => {
+  const handleDownloadAll = async () => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/v1/forms/${form.uuid}/components/download_all`,
+        { responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${form.file_name}_components.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading all components:', error);
+      alert('Failed to download components');
+    }
+  };
+
+  const columns: GridColDef[] = [
+    {
+      field: 'submitter',
+      headerName: 'Submitter',
+      flex: 1,
+      minWidth: 200,
+      valueGetter: (params) => 
+        `${params.row.signer_name} (${params.row.signer_email})`,
+    },
+    {
+      field: 'submission_count',
+      headerName: 'Submissions',
+      flex: 0.5,
+      minWidth: 100,
+      valueGetter: (params) => params.row.submission_count,
+    },
+    {
+      field: 'submitted_at',
+      headerName: 'Last Submission',
+      flex: 1,
+      minWidth: 200,
+      valueGetter: (params) => 
+        new Date(params.row.created_at).toLocaleString(),
+    },
+    ...form.form_components.map((component): GridColDef => ({
+      field: `component_${component.id}`,
+      headerName: component.original_filename,
+      flex: 1,
+      minWidth: 200,
+      renderCell: () => (
+        <Button
+          variant="outlined"
+          startIcon={<DownloadIcon />}
+          onClick={() => onDownloadComponent(form.uuid, component.id, component.original_filename, component.start_page, component.end_page)}
+        >
+          Download
+        </Button>
+      ),
+    })),
+  ];
+
+  return (
+    <Card sx={{ mb: 2 }}>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6">{form.file_name}</Typography>
+          <Button
+            variant="contained"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleDownloadAll}
+          >
+            Download All
+          </Button>
+        </Stack>
+        <Table 
+          columns={columns} 
+          rows={submissions.map(submission => ({
+            ...submission,
+            ...form.form_components.reduce((acc, component) => ({
+              ...acc,
+              [`component_${component.id}`]: component.original_filename,
+            }), {}),
+          }))} 
+        />
+      </CardContent>
+    </Card>
+  );
 };
 
 const Submissions = () => {
-  const [data, _setData] = useState<DataType[]>([]);
+  const [groupedSubmissions, setGroupedSubmissions] = useState<GroupedSubmission[]>([]);
 
-  const handleDownload = (url: string) => {
-    window.open(url, '_blank');
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
+
+  const fetchSubmissions = async () => {
+    try {
+      const response = await axiosInstance.get('/api/v1/submissions');
+      setGroupedSubmissions(response.data.grouped_submissions);
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+    }
+  };
+
+  const handleDownloadComponent = async (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number) => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/v1/submissions/forms/${formUuid}/components/${componentId}/download`,
+        { 
+          params: {
+            start_page: startPage,
+            end_page: endPage
+          },
+          responseType: 'blob' 
+        }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const pageRangeSuffix = startPage === endPage ? `_p${startPage}` : `_p${startPage}-${endPage}`;
+      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+      const fileExt = filename.split('.').pop();
+      link.setAttribute('download', `${fileNameWithoutExt}${pageRangeSuffix}.${fileExt}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading component:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        alert(`Failed to download component: ${error.response.data.error || 'Unknown error'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        alert('Failed to download component: No response from server');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        alert(`Failed to download component: ${error.message}`);
+      }
+    }
   };
 
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
-      <Table columns={columns(handleDownload)} rows={data} />
+      {groupedSubmissions.map(({ form, submissions }) => (
+        <Box key={form.uuid} sx={{ mb: 4 }}>
+          <SubmissionTable
+            form={form}
+            submissions={submissions}
+            onDownloadComponent={handleDownloadComponent}
+          />
+        </Box>
+      ))}
     </Box>
   );
 };

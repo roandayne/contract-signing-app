@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_05_213254) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_14_121507) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -53,6 +53,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_05_213254) do
     t.index ["user_id"], name: "index_downloads_on_user_id"
   end
 
+  create_table "form_components", force: :cascade do |t|
+    t.bigint "form_id", null: false
+    t.string "original_filename", null: false
+    t.integer "page_count", null: false
+    t.integer "start_page", null: false
+    t.integer "end_page", null: false
+    t.integer "order_index", null: false
+    t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "updated_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.index ["form_id"], name: "index_form_components_on_form_id"
+  end
+
   create_table "forms", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "file_name", null: false
@@ -62,6 +74,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_05_213254) do
     t.datetime "updated_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.string "signing_link"
     t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.bigint "submission_id"
+    t.index ["submission_id"], name: "index_forms_on_submission_id"
     t.index ["user_id"], name: "index_forms_on_user_id"
     t.index ["uuid"], name: "index_forms_on_uuid", unique: true
   end
@@ -110,6 +124,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_05_213254) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "downloads", "forms"
   add_foreign_key "downloads", "users"
+  add_foreign_key "form_components", "forms", on_delete: :cascade
+  add_foreign_key "forms", "submissions", on_delete: :nullify
   add_foreign_key "forms", "users", on_delete: :cascade
   add_foreign_key "signatures", "forms"
   add_foreign_key "signatures", "users"

@@ -2,8 +2,9 @@ class Api::V1::FormsController < ApplicationController
     include ::AuthorizeApiRequest
     require 'combine_pdf'
     require 'tempfile'
+    require 'zip'
     
-    before_action :set_form, only: [:show, :generate_link]
+    before_action :set_form, only: [:show, :generate_link, :download_component, :download_all_components]
     skip_before_action :authorize_request, only: [:show]
     
     def signature_fields
@@ -17,13 +18,13 @@ class Api::V1::FormsController < ApplicationController
       per_page = params[:per_page].presence || 10
     
       forms = current_user.forms
-                          .includes(:signatures)
+                          .includes(:signatures, :form_components)
                           .order(updated_at: :desc)
                           .page(page)
                           .per(per_page)
     
       render json: {
-        forms: forms.as_json(include: :signatures),
+        forms: forms.as_json(include: [:signatures, :form_components]),
         pagination: {
           current_page: forms.current_page,
           total_pages: forms.total_pages,
@@ -42,14 +43,28 @@ class Api::V1::FormsController < ApplicationController
 
         begin
           combined_pdf = CombinePDF.new
+          current_page = 1
+          form_components = []
 
-          params[:files].each do |uploaded_file|
+          params[:files].each_with_index do |uploaded_file, index|
             unless uploaded_file.content_type == "application/pdf"
               return render json: { error: "Only PDF files are allowed" }, status: :unprocessable_entity
             end
             
             pdf_content = CombinePDF.parse(uploaded_file.read)
+            page_count = pdf_content.pages.length
+            
+            # Store component information with 1-based page numbers
+            form_components << {
+              original_filename: uploaded_file.original_filename,
+              page_count: page_count,
+              start_page: current_page,
+              end_page: current_page + page_count - 1,
+              order_index: index
+            }
+            
             combined_pdf << pdf_content
+            current_page += page_count
           end
 
           temp_file = Tempfile.new(['combined', '.pdf'])
@@ -75,6 +90,11 @@ class Api::V1::FormsController < ApplicationController
           Rails.logger.debug "Form attributes before save: #{form.attributes.inspect}"
 
           if form.save
+            # Create form components
+            form_components.each do |component|
+              form.form_components.create!(component)
+            end
+            
             # Generate the URL based on the environment
             file_url = if Rails.env.development?
               Rails.application.routes.url_helpers.rails_blob_path(form.file, only_path: true)
@@ -86,7 +106,7 @@ class Api::V1::FormsController < ApplicationController
             
             render json: {
               message: "PDFs combined and uploaded successfully",
-              form: form,
+              form: form.as_json(include: :form_components),
               file_url: form.file_url
             }, status: :created
           else
@@ -115,11 +135,29 @@ class Api::V1::FormsController < ApplicationController
         render json: {
           form: @form,
           file_url: file_url,
-          signature_fields: @form.signatures
+          signature_fields: @form.signatures,
+          form_components: @form.form_components
         }
       else
         render json: { error: "No file attached" }, status: :not_found
       end
+    end
+
+    def download_component
+      component = @form.form_components.find(params[:component_id])
+      temp_file = @form.extract_component_pdf(component.start_page, component.end_page)
+      
+      if temp_file
+        send_file temp_file.path,
+                  filename: component.original_filename,
+                  type: 'application/pdf',
+                  disposition: 'attachment'
+      else
+        render json: { error: "Failed to extract component PDF" }, status: :unprocessable_entity
+      end
+    ensure
+      temp_file&.close
+      temp_file&.unlink if temp_file
     end
 
     def generate_link
@@ -135,6 +173,32 @@ class Api::V1::FormsController < ApplicationController
         render json: { signing_link: signing_link }, status: :ok
       else
         render json: { error: 'Failed to generate signing link' }, status: :unprocessable_entity
+      end
+    end
+
+    def download_all_components
+      begin
+        temp_zip = Tempfile.new(['components', '.zip'])
+        
+        Zip::File.open(temp_zip.path, Zip::File::CREATE) do |zipfile|
+          @form.form_components.each do |component|
+            temp_pdf = @form.extract_component_pdf(component.start_page, component.end_page)
+            if temp_pdf
+              zipfile.add(component.original_filename, temp_pdf.path)
+            end
+          end
+        end
+        
+        send_file temp_zip.path,
+                 filename: "#{@form.file_name}_components.zip",
+                 type: 'application/zip',
+                 disposition: 'attachment'
+      rescue => e
+        Rails.logger.error "Error creating zip file: #{e.message}"
+        render json: { error: "Failed to create zip file" }, status: :internal_server_error
+      ensure
+        temp_zip&.close
+        temp_zip&.unlink if temp_zip
       end
     end
 

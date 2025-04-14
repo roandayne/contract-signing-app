@@ -8,8 +8,11 @@ import {
   TextField,
   IconButton,
   Pagination,
+  Collapse,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { GridColDef } from '@mui/x-data-grid';
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
@@ -18,12 +21,22 @@ import Table from '../components/CustomMui/Table';
 import { ContractEditor } from '../components/Contracts/ContractEditor';
 import axios from 'axios';
 
+type FormComponent = {
+  id: number;
+  original_filename: string;
+  page_count: number;
+  start_page: number;
+  end_page: number;
+  order_index: number;
+};
+
 type DataType = {
   uuid: string;
   file_name: string;
   signing_link: string;
   file_url: string;
   submissions: number;
+  form_components: FormComponent[];
 };
 
 const shortenLink = (longUrl: string, callback: (shortUrl: string) => void) => {
@@ -54,6 +67,7 @@ const Contracts = () => {
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchContracts();
@@ -135,11 +149,50 @@ const Contracts = () => {
     }
   };
 
+  const handleDownloadComponent = async (formUuid: string, componentId: number, filename: string) => {
+    try {
+      const response = await axiosInstance.get(`/api/v1/forms/${formUuid}/components/${componentId}/download`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading component:', error);
+      alert('Failed to download component');
+    }
+  };
+
+  const handleToggleExpand = (uuid: string) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [uuid]: !prev[uuid]
+    }));
+  };
+
   const columns = (
     handleDownload: (url: string) => void,
     handleAddSignatureFields: (uuid: string, url: string) => void,
     handleGenerateLink: (formUuid: string) => void
   ): GridColDef[] => [
+    {
+      field: 'expand',
+      headerName: '',
+      width: 50,
+      renderCell: (params) => (
+        <IconButton
+          onClick={() => handleToggleExpand(params.row.uuid)}
+        >
+          {expandedRows[params.row.uuid] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+      ),
+    },
     {
       field: 'file_name',
       headerName: 'Contract Name',
@@ -204,6 +257,40 @@ const Contracts = () => {
         ) : (
           <Typography color="text.secondary">No file URL available</Typography>
         ),
+    },
+    {
+      field: 'components',
+      headerName: 'Components',
+      flex: 2,
+      minWidth: 300,
+      renderCell: (params) => (
+        <Box sx={{ width: '100%' }}>
+          <Collapse in={expandedRows[params.row.uuid]} timeout="auto" unmountOnExit>
+            <Stack spacing={1} sx={{ p: 1 }}>
+              {params.row.form_components?.map((component: FormComponent) => (
+                <Stack
+                  key={component.id}
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ backgroundColor: 'background.paper', p: 1, borderRadius: 1 }}
+                >
+                  <Typography variant="body2" sx={{ flex: 1 }}>
+                    {component.original_filename} ({component.page_count} pages)
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleDownloadComponent(params.row.uuid, component.id, component.original_filename)}
+                  >
+                    Download
+                  </Button>
+                </Stack>
+              ))}
+            </Stack>
+          </Collapse>
+        </Box>
+      ),
     },
     {
       field: 'actions',

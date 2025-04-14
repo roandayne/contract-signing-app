@@ -1,6 +1,6 @@
 class Submission < ApplicationRecord
-  belongs_to :form
   belongs_to :user, optional: true
+  belongs_to :form
   
   has_one_attached :signed_pdf
   
