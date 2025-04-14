@@ -12,6 +12,7 @@ class Submission < ApplicationRecord
     return unless signed_pdf.attached?
     
     require 'hexapdf'
+    require 'json'
     
     # Create a temporary file to store the annotated PDF
     temp_file = Tempfile.new(['annotated', '.pdf'])
@@ -62,12 +63,12 @@ class Submission < ApplicationRecord
           
           # Debug each annotation's page number
           annotations['signatures']&.each_with_index do |sig, idx|
-            sig['page_number'] = sig['page_number'].to_i if sig['page_number'].present?
+            sig['page_number'] = sig['page_number'].to_i
             Rails.logger.debug "Signature #{idx+1} - page_number: #{sig['page_number']}"
           end
           
           annotations['type_fields']&.each_with_index do |field, idx|
-            field['page_number'] = field['page_number'].to_i if field['page_number'].present?
+            field['page_number'] = field['page_number'].to_i
             Rails.logger.debug "Type field #{idx+1} - page_number: #{field['page_number']}"
           end
           
@@ -77,23 +78,14 @@ class Submission < ApplicationRecord
           raise
         end
         
-        first_signature_page = nil
-        
         # Process signatures
         annotations['signatures']&.each do |sig|
           Rails.logger.debug "Processing signature with data: #{sig.inspect}"
           
-          # Safely convert page number to 0-based index, with 0 as default if missing/invalid
-          raw_page_number = sig['page_number']
-          Rails.logger.debug "Raw page number from signature: #{raw_page_number.inspect}"
-          
-          # Ensure we have a valid page number, default to first page (0) if invalid
-          page_number = raw_page_number.present? && raw_page_number.to_i > 0 ? raw_page_number.to_i - 1 : 0
+          # Convert page number to 0-based index (PDF pages are 0-based)
+          page_number = sig['page_number'].to_i - 1
           
           Rails.logger.debug "Placing signature on page #{page_number+1} (0-indexed: #{page_number})"
-          
-          # Keep track of the first signature's page (but don't override if already set)
-          first_signature_page ||= page_number if sig['signature_data'].present?
           
           # Ensure page exists
           if page_number >= doc.pages.count
@@ -148,12 +140,8 @@ class Submission < ApplicationRecord
         annotations['type_fields']&.each do |field|
           Rails.logger.debug "Processing type field with data: #{field.inspect}"
           
-          # Safely convert page number to 0-based index, with 0 as default if missing/invalid
-          raw_page_number = field['page_number']
-          Rails.logger.debug "Raw page number from type field: #{raw_page_number.inspect}"
-          
-          # Ensure we have a valid page number, default to first page (0) if invalid
-          page_number = raw_page_number.present? && raw_page_number.to_i > 0 ? raw_page_number.to_i - 1 : 0
+          # Convert page number to 0-based index (PDF pages are 0-based)
+          page_number = field['page_number'].to_i - 1
           
           Rails.logger.debug "Placing type field on page #{page_number+1} (0-indexed: #{page_number})"
           
@@ -203,5 +191,203 @@ class Submission < ApplicationRecord
       temp_file.close
       temp_file.unlink
     end
+  end
+
+  def annotate_pdf1
+    require 'hexapdf'
+    require 'json'
+    require 'base64'
+    require 'tempfile'
+  
+    begin
+      # Debug: Print raw input data
+      puts "Raw annotations data received:"
+      puts annotations_data.inspect
+  
+      # Parse the input data
+      parsed_data = case annotations_data
+                   when String
+                     if annotations_data.include?('=>')
+                       # Convert Ruby hash string to JSON format
+                       cleaned_string = annotations_data.gsub(/=>/, ':').gsub(/\bnil\b/, 'null')
+                       JSON.parse(cleaned_string)
+                     else
+                       JSON.parse(annotations_data)
+                     end
+                   when Hash
+                     annotations_data
+                   else
+                     raise "Unexpected annotations_data format: #{annotations_data.class}"
+                   end
+  
+      # Debug: Print parsed data
+      puts "Parsed data structure:"
+      puts parsed_data.inspect
+  
+      # Extract signatures
+      signatures = parse_signature_data(parsed_data)
+      puts "Extracted #{signatures.size} signatures to process"
+  
+      # Open the PDF document
+      pdf_path = ActiveStorage::Blob.service.path_for(signed_pdf.key)
+      document = HexaPDF::Document.open(pdf_path)
+  
+      # Create temp file for output
+      temp_file = Tempfile.new(['annotated', '.pdf'], binmode: true)
+      puts "Temp file created: #{temp_file.path}"
+      # Process each signature
+      signatures.each_with_index do |signature, index|
+        begin
+          puts "\nProcessing signature #{index + 1}:"
+          puts signature.inspect
+  
+          page_number = signature[:page_number].to_i
+          puts "Target page: #{page_number}"
+  
+          # Validate page number
+          if page_number < 1 || page_number > document.pages.count
+            puts "Skipping - Invalid page number (document has #{document.pages.count} pages)"
+            next
+          end
+  
+          page = document.pages[page_number - 1]
+          media_box = page.box(:media)
+          puts "Page size: #{media_box.width} x #{media_box.height}"
+  
+          # Verify and process image data
+          unless signature[:signature_data]&.start_with?('data:image')
+            puts "Skipping - Invalid image data format"
+            next
+          end
+  
+          image_data = signature[:signature_data].split(',', 2).last
+          decoded_data = Base64.decode64(image_data)
+          puts "Image data size: #{decoded_data.size} bytes"
+  
+          image = document.images.add(StringIO.new(decoded_data))
+          image_xobject = document.add(image.to_xobject)
+          puts "Image successfully added to PDF"
+  
+          # Calculate annotation position (PDF coordinates start at bottom-left)
+          x = signature[:position_x].to_f
+          y = media_box.height - signature[:position_y].to_f - signature[:height].to_f
+          width = signature[:width].to_f
+          height = signature[:height].to_f
+  
+          rect = [x, y, x + width, y + height]
+          puts "Annotation rectangle: #{rect.inspect}"
+  
+          # Create annotation
+          annotation = page.add_annotation(
+            :Stamp,
+            rect: rect,
+            contents: "Signature for #{signature[:signer_name]}",
+            name: "Signature#{signature[:field_id]}",
+            flags: [:print]
+          )
+  
+          # Create appearance stream
+          form = document.add({
+            Type: :XObject,
+            Subtype: :Form,
+            BBox: [0, 0, width, height]
+          })
+          form.canvas.image(image_xobject, at: [0, 0], width: width, height: height)
+          annotation.appearance = { N: form }
+  
+          puts "Successfully added signature to page #{page_number}"
+        rescue => e
+          puts "Error processing signature #{index + 1}: #{e.message}"
+          puts e.backtrace.join("\n")
+          next
+        end
+      end
+  
+      # Save the document
+      document.write(temp_file.path, optimize: true)
+      puts "\nPDF successfully annotated and saved to #{temp_file.path}"
+  
+      # Verify the output file
+      if File.size(temp_file.path) > 0
+        temp_file.rewind
+        temp_file
+      else
+        puts "Error: Output file is empty"
+        temp_file.close!
+        nil
+      end
+  
+    rescue => e
+      puts "Fatal error in annotate_pdf: #{e.message}"
+      puts e.backtrace.join("\n")
+      temp_file&.close!
+      raise
+    end
+  end
+  
+  def parse_signature_data(data)
+    puts "\nParsing signature data..."
+    
+    # Initialize result array
+    signatures = []
+  
+    # Extract signer info (handle both hash and string key formats)
+    signer_name = data.dig('signature', 'signer_name') || 
+                  data['signature[signer_name]'] || 
+                  data.dig(:signature, :signer_name) || 
+                  data[:'signature[signer_name]']
+  
+    signer_email = data.dig('signature', 'signer_email') || 
+                   data['signature[signer_email]'] || 
+                   data.dig(:signature, :signer_email) || 
+                   data[:'signature[signer_email]']
+  
+    puts "Signer: #{signer_name} <#{signer_email}>"
+  
+    # Handle different data structures
+    if data.dig('signature', 'signatures_attributes')
+      # Nested hash structure
+      signature_attrs = data['signature']['signatures_attributes']
+      signature_attrs.each_with_index do |(_, attrs), index|
+        signatures << build_signature_hash(attrs, index, signer_name, signer_email)
+      end
+    elsif data.keys.any? { |k| k.to_s.start_with?('signature[signatures_attributes]') }
+      # Flat structure with string keys
+      data.each do |key, value|
+        if key.to_s.start_with?('signature[signatures_attributes]')
+          parts = key.to_s.split(/[\[\]]/).reject(&:empty?)
+          index = parts[2].to_i
+          field = parts[3]
+          
+          signatures[index] ||= { 
+            signer_name: signer_name, 
+            signer_email: signer_email,
+            field_id: index.to_s
+          }
+          signatures[index][field.to_sym] = value
+        end
+      end
+    else
+      puts "Unrecognized signature data structure"
+    end
+  
+    # Compact and filter out nil entries
+    signatures = signatures.compact.select { |s| s[:signature_data].present? }
+    puts "Found #{signatures.size} valid signatures"
+    signatures
+  end
+  
+  def build_signature_hash(attrs, index, signer_name, signer_email)
+    {
+      signer_name: signer_name,
+      signer_email: signer_email,
+      field_id: attrs['field_id'] || attrs[:field_id] || index.to_s,
+      signature_data: attrs['signature_data'] || attrs[:signature_data],
+      position_x: attrs['position_x'] || attrs[:position_x] || 0,
+      position_y: attrs['position_y'] || attrs[:position_y] || 0,
+      width: attrs['width'] || attrs[:width] || 100,
+      height: attrs['height'] || attrs[:height] || 50,
+      page_number: attrs['page_number'] || attrs[:page_number] || 1
+    }.compact
   end
 end 
