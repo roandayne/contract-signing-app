@@ -1,7 +1,7 @@
 class Api::V1::SubmissionsController < ApplicationController
   include ::AuthorizeApiRequest
   include Rails.application.routes.url_helpers
-  skip_before_action :authorize_request, only: [:index, :download_component]
+  skip_before_action :authorize_request, only: [:index, :download_component, :download_all_components]
   
   def index
     # Get all submissions with their forms and components
@@ -33,9 +33,7 @@ class Api::V1::SubmissionsController < ApplicationController
               page_count: component.page_count,
               start_page: component.start_page,
               end_page: component.end_page,
-              order_index: component.order_index,
-              # Add download URL for each component
-              download_url: rails_storage_proxy_url(form.file)
+              order_index: component.order_index
             }
           end
         },
@@ -63,14 +61,23 @@ class Api::V1::SubmissionsController < ApplicationController
 
   def download_component
     begin
-      Rails.logger.info "Attempting to download component with form_uuid: #{params[:form_uuid]}, component_id: #{params[:id]}"
+      Rails.logger.info "Attempting to download component with form_uuid: #{params[:form_uuid]}, submission_id: #{params[:submission_id]}, component_id: #{params[:id]}"
       
       form = Form.find_by!(uuid: params[:form_uuid])
       Rails.logger.info "Found form with UUID: #{form.uuid}"
       
-      unless form.file.attached?
-        Rails.logger.error "Form file is not attached"
-        return render json: { error: "Form file is not available" }, status: :unprocessable_entity
+      submission = Submission.find(params[:submission_id])
+      Rails.logger.info "Found submission with ID: #{submission.id}"
+      
+      # Verify the submission belongs to this form
+      unless submission.form_id == form.id
+        Rails.logger.error "Submission does not belong to the specified form"
+        return render json: { error: "Invalid submission for this form" }, status: :unprocessable_entity
+      end
+      
+      unless submission.signed_pdf.attached?
+        Rails.logger.error "Signed PDF is not attached"
+        return render json: { error: "Signed PDF is not available" }, status: :unprocessable_entity
       end
       
       component = form.form_components.find(params[:id])
@@ -82,7 +89,7 @@ class Api::V1::SubmissionsController < ApplicationController
       
       # Download the file content
       begin
-        file_content = form.file.download
+        file_content = submission.signed_pdf.download
         Rails.logger.info "Successfully downloaded file content, size: #{file_content.size} bytes"
       rescue StandardError => e
         Rails.logger.error "Error downloading file: #{e.message}"
@@ -142,6 +149,84 @@ class Api::V1::SubmissionsController < ApplicationController
     rescue StandardError => e
       Rails.logger.error "Error in download_component: #{e.message}\n#{e.backtrace.join("\n")}"
       render json: { error: "Failed to process PDF" }, status: :internal_server_error
+    end
+  end
+
+  def download_all_components
+    begin
+      Rails.logger.info "Attempting to download all components for form_uuid: #{params[:form_uuid]}"
+      
+      form = Form.find_by!(uuid: params[:form_uuid])
+      Rails.logger.info "Found form with UUID: #{form.uuid}"
+      
+      unless form.file.attached?
+        Rails.logger.error "Form file is not attached"
+        return render json: { error: "Form file is not available" }, status: :unprocessable_entity
+      end
+      
+      # Download the file content
+      begin
+        file_content = form.file.download
+        Rails.logger.info "Successfully downloaded file content, size: #{file_content.size} bytes"
+      rescue StandardError => e
+        Rails.logger.error "Error downloading file: #{e.message}"
+        return render json: { error: "Could not download file content" }, status: :unprocessable_entity
+      end
+      
+      # Create a temporary directory for our files
+      require 'tmpdir'
+      Dir.mktmpdir do |temp_dir|
+        # Create a temporary file for the main PDF
+        require 'tempfile'
+        temp_pdf = Tempfile.new(['temp_pdf', '.pdf'], binmode: true)
+        begin
+          temp_pdf.write(file_content)
+          temp_pdf.rewind
+          pdf = CombinePDF.load(temp_pdf.path)
+          Rails.logger.info "Loaded PDF with #{pdf.pages.length} pages"
+          
+          # Create a zip file
+          require 'zip'
+          zip_file_path = File.join(temp_dir, "#{form.file_name}_components.zip")
+          
+          Zip::File.open(zip_file_path, Zip::File::CREATE) do |zipfile|
+            form.form_components.each do |component|
+              Rails.logger.info "Processing component #{component.id}: pages #{component.start_page} to #{component.end_page}"
+              
+              # Extract pages for this component
+              selected_pages = pdf.pages[component.start_page - 1..component.end_page - 1]
+              
+              # Create new PDF with selected pages
+              new_pdf = CombinePDF.new
+              selected_pages.each { |page| new_pdf << page }
+              
+              # Create a temporary file for this component
+              component_pdf_path = File.join(temp_dir, component.original_filename)
+              File.binwrite(component_pdf_path, new_pdf.to_pdf)
+              
+              # Add to zip file
+              zipfile.add(component.original_filename, component_pdf_path)
+            end
+          end
+          
+          # Send the zip file
+          zip_data = File.binread(zip_file_path)
+          send_data zip_data,
+                    filename: "#{form.file_name}_components.zip",
+                    type: 'application/zip',
+                    disposition: 'attachment'
+                    
+        ensure
+          temp_pdf.close
+          temp_pdf.unlink
+        end
+      end
+    rescue ActiveRecord::RecordNotFound => e
+      Rails.logger.error "Record not found: #{e.message}"
+      render json: { error: "Resource not found" }, status: :not_found
+    rescue StandardError => e
+      Rails.logger.error "Error in download_all_components: #{e.message}\n#{e.backtrace.join("\n")}"
+      render json: { error: "Failed to process PDFs" }, status: :internal_server_error
     end
   end
 

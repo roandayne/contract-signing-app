@@ -30,6 +30,7 @@ Rails.application.routes.draw do
       resources :submissions, only: [:index] do
         collection do
           get 'forms/:form_uuid/components/:id/download', to: 'submissions#download_component'
+          get 'forms/:form_uuid/components/download_all', to: 'submissions#download_all_components'
         end
       end
       

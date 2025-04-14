@@ -41,12 +41,12 @@ const SubmissionTable = ({
 }: { 
   form: Form;
   submissions: Submission[];
-  onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number) => void;
+  onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number, submissionId: number) => void;
 }) => {
   const handleDownloadAll = async () => {
     try {
       const response = await axiosInstance.get(
-        `/api/v1/forms/${form.uuid}/components/download_all`,
+        `/api/v1/submissions/forms/${form.uuid}/components/download_all`,
         { responseType: 'blob' }
       );
       
@@ -58,9 +58,15 @@ const SubmissionTable = ({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading all components:', error);
-      alert('Failed to download components');
+      if (error.response) {
+        alert(`Failed to download components: ${error.response.data.error || 'Unknown error'}`);
+      } else if (error.request) {
+        alert('Failed to download components: No response from server');
+      } else {
+        alert(`Failed to download components: ${error.message}`);
+      }
     }
   };
 
@@ -70,15 +76,14 @@ const SubmissionTable = ({
       headerName: 'Submitter',
       flex: 1,
       minWidth: 200,
-      valueGetter: (params) => 
-        `${params.row.signer_name} (${params.row.signer_email})`,
+      valueGetter: (params) => params.row.signer_name,
     },
     {
-      field: 'submission_count',
-      headerName: 'Submissions',
-      flex: 0.5,
-      minWidth: 100,
-      valueGetter: (params) => params.row.submission_count,
+      field: 'signer_email',
+      headerName: 'Email',
+      flex: 1,
+      minWidth: 200,
+      valueGetter: (params) => params.row.signer_email,
     },
     {
       field: 'submitted_at',
@@ -88,16 +93,31 @@ const SubmissionTable = ({
       valueGetter: (params) => 
         new Date(params.row.created_at).toLocaleString(),
     },
+    {
+      field: 'download_all',
+      headerName: 'All Components',
+      flex: 1,
+      minWidth: 200,
+      renderCell: () => (
+        <Button
+          variant="contained"
+          startIcon={<FileDownloadIcon />}
+          onClick={handleDownloadAll}
+        >
+          Download All
+        </Button>
+      ),
+    },
     ...form.form_components.map((component): GridColDef => ({
       field: `component_${component.id}`,
       headerName: component.original_filename,
       flex: 1,
       minWidth: 200,
-      renderCell: () => (
+      renderCell: (params) => (
         <Button
           variant="outlined"
           startIcon={<DownloadIcon />}
-          onClick={() => onDownloadComponent(form.uuid, component.id, component.original_filename, component.start_page, component.end_page)}
+          onClick={() => onDownloadComponent(form.uuid, component.id, component.original_filename, component.start_page, component.end_page, params.row.id)}
         >
           Download
         </Button>
@@ -108,16 +128,7 @@ const SubmissionTable = ({
   return (
     <Card sx={{ mb: 2 }}>
       <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">{form.file_name}</Typography>
-          <Button
-            variant="contained"
-            startIcon={<FileDownloadIcon />}
-            onClick={handleDownloadAll}
-          >
-            Download All
-          </Button>
-        </Stack>
+        <Typography variant="h6" mb={2}>{form.file_name}</Typography>
         <Table 
           columns={columns} 
           rows={submissions.map(submission => ({
@@ -149,14 +160,15 @@ const Submissions = () => {
     }
   };
 
-  const handleDownloadComponent = async (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number) => {
+  const handleDownloadComponent = async (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number, submissionId: number) => {
     try {
       const response = await axiosInstance.get(
         `/api/v1/submissions/forms/${formUuid}/components/${componentId}/download`,
         { 
           params: {
             start_page: startPage,
-            end_page: endPage
+            end_page: endPage,
+            submission_id: submissionId
           },
           responseType: 'blob' 
         }
