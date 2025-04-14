@@ -154,19 +154,28 @@ class Api::V1::SubmissionsController < ApplicationController
 
   def download_all_components
     begin
-      Rails.logger.info "Attempting to download all components for form_uuid: #{params[:form_uuid]}"
+      Rails.logger.info "Attempting to download all components for form_uuid: #{params[:form_uuid]}, submission_id: #{params[:submission_id]}"
       
       form = Form.find_by!(uuid: params[:form_uuid])
       Rails.logger.info "Found form with UUID: #{form.uuid}"
       
-      unless form.file.attached?
-        Rails.logger.error "Form file is not attached"
-        return render json: { error: "Form file is not available" }, status: :unprocessable_entity
+      submission = Submission.find(params[:submission_id])
+      Rails.logger.info "Found submission with ID: #{submission.id}"
+      
+      # Verify the submission belongs to this form
+      unless submission.form_id == form.id
+        Rails.logger.error "Submission does not belong to the specified form"
+        return render json: { error: "Invalid submission for this form" }, status: :unprocessable_entity
+      end
+      
+      unless submission.signed_pdf.attached?
+        Rails.logger.error "Signed PDF is not attached"
+        return render json: { error: "Signed PDF is not available" }, status: :unprocessable_entity
       end
       
       # Download the file content
       begin
-        file_content = form.file.download
+        file_content = submission.signed_pdf.download
         Rails.logger.info "Successfully downloaded file content, size: #{file_content.size} bytes"
       rescue StandardError => e
         Rails.logger.error "Error downloading file: #{e.message}"
@@ -201,18 +210,18 @@ class Api::V1::SubmissionsController < ApplicationController
               selected_pages.each { |page| new_pdf << page }
               
               # Create a temporary file for this component
-              component_pdf_path = File.join(temp_dir, component.original_filename)
+              component_pdf_path = File.join(temp_dir, "signed_#{component.original_filename}")
               File.binwrite(component_pdf_path, new_pdf.to_pdf)
               
               # Add to zip file
-              zipfile.add(component.original_filename, component_pdf_path)
+              zipfile.add("signed_#{component.original_filename}", component_pdf_path)
             end
           end
           
           # Send the zip file
           zip_data = File.binread(zip_file_path)
           send_data zip_data,
-                    filename: "#{form.file_name}_components.zip",
+                    filename: "signed_#{form.file_name}_components.zip",
                     type: 'application/zip',
                     disposition: 'attachment'
                     

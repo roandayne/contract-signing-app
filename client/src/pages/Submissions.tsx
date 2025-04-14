@@ -43,17 +43,22 @@ const SubmissionTable = ({
   submissions: Submission[];
   onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number, submissionId: number) => void;
 }) => {
-  const handleDownloadAll = async () => {
+  const handleDownloadAll = async (submissionId: number) => {
     try {
       const response = await axiosInstance.get(
         `/api/v1/submissions/forms/${form.uuid}/components/download_all`,
-        { responseType: 'blob' }
+        { 
+          params: {
+            submission_id: submissionId
+          },
+          responseType: 'blob' 
+        }
       );
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${form.file_name}_components.zip`);
+      link.setAttribute('download', `signed_${form.file_name}_components.zip`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -98,11 +103,11 @@ const SubmissionTable = ({
       headerName: 'All Components',
       flex: 1,
       minWidth: 200,
-      renderCell: () => (
+      renderCell: (params) => (
         <Button
           variant="contained"
           startIcon={<FileDownloadIcon />}
-          onClick={handleDownloadAll}
+          onClick={() => handleDownloadAll(params.row.id)}
         >
           Download All
         </Button>
