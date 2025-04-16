@@ -63,7 +63,7 @@ class Submission < ApplicationRecord
 
           image = document.images.add(tempfile)
           canvas = page.canvas(type: :overlay)
-          canvas.image(image, at: [signature['position_x'], page.box(:media).height - signature['position_y'] - 45], width: signature['width'], height: signature['height'])
+          canvas.image(image, at: [signature['position_x'], page.box(:media).height - signature['position_y'] - signature['height'] + 25], width: signature['width'], height: signature['height'])
           tempfile.close
           tempfile.unlink
         end

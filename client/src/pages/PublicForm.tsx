@@ -209,7 +209,7 @@ console.log(sigPadRefs.current)
             name={`field_${field.id}`}
             value={formValues[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
-            placeholder="Full Name"
+            placeholder="Enter information"
             onClick={() => setCurrentFieldId(field.id.toString())}
             sx={{
               ...commonStyle,

@@ -42,45 +42,6 @@ const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
   date: { width: 150, height: 20 },
 };
 
-interface FieldInputProps {
-  type: FieldType;
-  scale: number;
-}
-
-const FieldInput: React.FC<FieldInputProps> = ({ type, scale }) => {
-  const getInputProps = () => {
-    const baseProps = {
-      size: "small" as const,
-      fullWidth: true,
-      sx: { 
-        '& .MuiInputBase-input': { 
-          padding: '2px 4px',
-          fontSize: `${12 * scale}px`
-        }
-      }
-    };
-
-    switch (type) {
-      case 'signature':
-        return { ...baseProps, placeholder: "Signature here" };
-      case 'initial':
-        return { ...baseProps, placeholder: "Initial here" };
-      case 'name':
-        return { ...baseProps, placeholder: "Full name" };
-      case 'date':
-        return { 
-          ...baseProps, 
-          type: "date",
-          InputLabelProps: { shrink: true }
-        };
-      default:
-        return baseProps;
-    }
-  };
-
-  return <TextField {...getInputProps()} />;
-};
-
 export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   pdfUrl,
   formUuid,
@@ -193,7 +154,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
       case 'initial':
         return 'Initial';
       case 'name':
-        return 'Full Name';
+        return 'Text';
       case 'date':
         return 'Date';
       default:
@@ -266,7 +227,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
               Initial
             </ToggleButton>
             <ToggleButton value="name" aria-label="name">
-              Name
+              Text
             </ToggleButton>
             <ToggleButton value="date" aria-label="date">
               Date
