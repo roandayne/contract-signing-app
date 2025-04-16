@@ -44,29 +44,44 @@ class Submission < ApplicationRecord
 
     puts "Annotations: #{annotations.inspect}"
 
-    signatures = annotations['signatures']
+    if annotations['signatures'].present?
+      signatures = annotations['signatures']
 
-    signatures.each do |signature|
-      puts "Signature: #{signature.inspect}"
-      page = document.pages[signature['page_number'] - 1]
-      puts "Page: #{page.inspect}"
+      signatures.each do |signature|
+        puts "Signature: #{signature.inspect}"
+        page = document.pages[signature['page_number'] - 1]
+        puts "Page: #{page.inspect}"
 
-      regex = /^data:image\/png;base64,(.*)/
-      if signature['signature_data'].match?(regex)
-        base64_data = signature['signature_data'].match(regex)[1]
-        decoded_data = Base64.decode64(base64_data)
+        regex = /^data:image\/png;base64,(.*)/
+        if signature['signature_data'].match?(regex)
+          base64_data = signature['signature_data'].match(regex)[1]
+          decoded_data = Base64.decode64(base64_data)
 
-        tempfile = Tempfile.new(['signature', '.png'], binmode: true)
-        tempfile.write(decoded_data)
-        tempfile.rewind
+          tempfile = Tempfile.new(['signature', '.png'], binmode: true)
+          tempfile.write(decoded_data)
+          tempfile.rewind
 
-        image = document.images.add(tempfile)
-        # xobject = document.add(image.to_xobject)
-        # page.canvas.image(image, at: [signature['position_x'], page.box(:media).height - signature['position_y'] - signature['height']], width: signature['width'], height: signature['height'])
+          image = document.images.add(tempfile)
+          canvas = page.canvas(type: :overlay)
+          canvas.image(image, at: [signature['position_x'], page.box(:media).height - signature['position_y'] - signature['height']], width: signature['width'], height: signature['height'])
+          tempfile.close
+          tempfile.unlink
+        end
+      end
+    end
+
+    if annotations['type_fields'].present?
+      type_fields = annotations['type_fields']
+      type_fields.each do |type_field|
+        puts "Type Field: #{type_field.inspect}"
+        page = document.pages[type_field['page_number'] - 1]
+        puts "Page: #{page.inspect}"
         canvas = page.canvas(type: :overlay)
-        canvas.image(image, at: [signature['position_x'], page.box(:media).height - signature['position_y'] - signature['height']], width: signature['width'], height: signature['height'])
-        tempfile.close
-        tempfile.unlink
+        
+        # Set up the font before drawing text using the correct font configuration
+        canvas.font('Helvetica', size: 12)
+        
+        canvas.text(type_field['value'], at: [type_field['position_x'], page.box(:media).height - type_field['position_y'] - 10])
       end
     end
 
