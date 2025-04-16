@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
 import { useNavigate } from 'react-router-dom';
-
-interface User {
-  id: number;
-  email: string;
-}
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { setUser, logout } from '../redux/features/user/userSlice';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.user);
 
   const checkAuth = async () => {
     try {
       const response = await axiosInstance.get('/api/v1/auth/check');
-      setUser(response.data.user);
+      dispatch(setUser(response.data.user));
     } catch (error) {
-      setUser(null);
+      dispatch(logout());
       navigate('/login');
     } finally {
       setLoading(false);

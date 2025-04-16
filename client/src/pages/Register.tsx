@@ -15,6 +15,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import Image from '../assets/images/register.jpg';
 import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
+import { useAppDispatch } from '../redux/hooks';
+import { setUser } from '../redux/features/user/userSlice';
 
 const validationSchema = yup.object({
   email: yup
@@ -43,6 +45,7 @@ type FormData = {
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const {
@@ -71,9 +74,10 @@ const Register = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setIsGoogleLoading(true);
     try {
-      await axiosInstance.post('/api/v1/google-login', {
+      const response = await axiosInstance.post('/api/v1/google-login', {
         credential: credentialResponse.credential,
       });
+      dispatch(setUser(response.data.user));
       setIsGoogleLoading(false);
       navigate('/dashboard');
     } catch (error) {

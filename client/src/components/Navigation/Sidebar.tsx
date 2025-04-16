@@ -20,7 +20,9 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
-import { useAuth } from '../../hooks/useAuth';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import { logout } from '../../redux/features/user/userSlice';
+
 const drawerWidth = 240;
 
 interface Props {
@@ -33,10 +35,11 @@ interface Props {
 
 export const Sidebar = (props: Props) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isClosing, setIsClosing] = React.useState(false);
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.user);
 
   const handleDrawerClose = () => {
     setIsClosing(true);
@@ -54,12 +57,9 @@ export const Sidebar = (props: Props) => {
   };
 
   const handleLogout = async () => {
-    if (!user) {
-      navigate('/login');
-    }
-
     try {
       await axiosInstance.delete('/api/v1/logout');
+      dispatch(logout());
       navigate('/login');
     } catch (error) {
       console.log(error);
@@ -88,7 +88,7 @@ export const Sidebar = (props: Props) => {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          Hello, User Name
+          Hello, {user?.email || 'User'}
         </Typography>
       </Toolbar>
       <Divider />

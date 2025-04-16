@@ -16,6 +16,8 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
 import { LoginOutlined } from '@mui/icons-material';
+import { useAppDispatch } from '../redux/hooks';
+import { setUser } from '../redux/features/user/userSlice';
 
 const validationSchema = yup.object({
   email: yup
@@ -35,6 +37,7 @@ type FormData = {
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const {
@@ -48,7 +51,8 @@ const Login = () => {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await axiosInstance.post('/api/v1/login', data);
+      const response = await axiosInstance.post('/api/v1/login', data);
+      dispatch(setUser(response.data.user));
       setIsLoading(false);
       navigate('/dashboard');
     } catch (error) {
@@ -60,27 +64,23 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       setIsGoogleLoading(true);
-      await axiosInstance.post('/api/v1/google-login', 
-        {
-          credential: credentialResponse.credential,
-        }
-      );
+      const response = await axiosInstance.post('/api/v1/google-login', {
+        credential: credentialResponse.credential,
+      });
+      console.log(response.data);
+      dispatch(setUser(response.data.user));
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Google login error:', error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Response data:', error.response.data);
         console.error('Response status:', error.response.status);
         console.error('Response headers:', error.response.headers);
         alert(`Login failed: ${error.response.data.error || 'Unknown error'}`);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('No response received:', error.request);
         alert('No response received from server');
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Error setting up request:', error.message);
         alert(`Error: ${error.message}`);
       }
