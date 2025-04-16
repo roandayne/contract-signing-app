@@ -1,4 +1,4 @@
-import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, IconButton, Paper, Button } from '@mui/material';
+import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, IconButton, Paper, Button, TextField } from '@mui/material';
 import React, { useRef, useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -40,6 +40,45 @@ const fieldDimensions: Record<FieldType, { width: number; height: number }> = {
   initial: { width: 100, height: 20 },
   name: { width: 200, height: 20 },
   date: { width: 150, height: 20 },
+};
+
+interface FieldInputProps {
+  type: FieldType;
+  scale: number;
+}
+
+const FieldInput: React.FC<FieldInputProps> = ({ type, scale }) => {
+  const getInputProps = () => {
+    const baseProps = {
+      size: "small" as const,
+      fullWidth: true,
+      sx: { 
+        '& .MuiInputBase-input': { 
+          padding: '2px 4px',
+          fontSize: `${12 * scale}px`
+        }
+      }
+    };
+
+    switch (type) {
+      case 'signature':
+        return { ...baseProps, placeholder: "Signature here" };
+      case 'initial':
+        return { ...baseProps, placeholder: "Initial here" };
+      case 'name':
+        return { ...baseProps, placeholder: "Full name" };
+      case 'date':
+        return { 
+          ...baseProps, 
+          type: "date",
+          InputLabelProps: { shrink: true }
+        };
+      default:
+        return baseProps;
+    }
+  };
+
+  return <TextField {...getInputProps()} />;
 };
 
 export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({

@@ -34,7 +34,7 @@ interface Field {
   position_x: number;
   position_y: number;
   signature_data: string | null;
-  signature_type: 'type' | 'date' | 'draw';
+  signature_type: 'type' | 'date' | 'draw' | 'initial';
   name: string;
   width: number;
   height?: number;
@@ -176,6 +176,8 @@ console.log(sigPadRefs.current)
           return { width: 200, height: 20 };
         case 'date':
           return { width: 150, height: 20 };
+        case 'initial':
+          return { width: 80, height: 20 };
         default:
           return { width: 200, height: 20 };
       }
@@ -278,6 +280,41 @@ console.log(sigPadRefs.current)
               <Typography align="center">Click to sign</Typography>
             )}
           </Box>
+        );
+      case 'initial':
+        return (
+          <TextField
+            key={field.id}
+            type="text"
+            name={`field_${field.id}`}
+            value={formValues[field.id] || ''}
+            onChange={(e) => {
+              // Limit input to 3 characters for initials
+              const value = e.target.value.slice(0, 3).toUpperCase();
+              handleChange(field.id, value);
+            }}
+            onClick={() => setCurrentFieldId(field.id.toString())}
+            placeholder="ABC"
+            sx={{
+              ...commonStyle,
+              width: '80px', // Smaller width for initials
+              '& .MuiOutlinedInput-root': {
+                height: '20px',
+                padding: 0,
+                '& input': {
+                  padding: '0 5px',
+                  height: '20px',
+                  textTransform: 'uppercase',
+                  textAlign: 'center'
+                }
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: '1px solid #ccc'
+              }
+            }}
+            variant="outlined"
+            size="small"
+          />
         );
       default:
         return null;
