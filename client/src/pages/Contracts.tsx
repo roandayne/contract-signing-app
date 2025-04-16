@@ -284,7 +284,7 @@ const Contracts = () => {
             variant="contained"
             size="small"
             onClick={() => handleGenerateLink(params.row.uuid)}
-            disabled={!params.row.file_url || !params.row.signatures?.length}
+            disabled={params.row.signing_link}
             color="secondary"
           >
             Generate Link

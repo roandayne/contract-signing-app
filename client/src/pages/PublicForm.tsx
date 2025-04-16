@@ -209,6 +209,7 @@ console.log(sigPadRefs.current)
             name={`field_${field.id}`}
             value={formValues[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
+            placeholder="Full Name"
             onClick={() => setCurrentFieldId(field.id.toString())}
             sx={{
               ...commonStyle,
@@ -237,6 +238,7 @@ console.log(sigPadRefs.current)
             value={formValues[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
             onClick={() => setCurrentFieldId(field.id.toString())}
+            placeholder="MM/DD/YYYY"
             sx={{
               ...commonStyle,
               '& .MuiOutlinedInput-root': {
