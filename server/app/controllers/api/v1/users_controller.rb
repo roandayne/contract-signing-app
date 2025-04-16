@@ -129,7 +129,6 @@ module Api::V1
       @user.email_validated = false
 
       if @user.save
-        # Send validation email
         UserMailer.email_validation(@user).deliver_later
         
         render json: {
@@ -166,12 +165,10 @@ module Api::V1
     end
 
     private
-      # Use callbacks to share common setup or constraints between actions.
       def set_api_v1_user
         @user = User.find(params.expect(:id))
       end
 
-      # Only allow a list of trusted parameters through.
       def user_params
         params.require(:user).permit(:id, :email, :password)
       end

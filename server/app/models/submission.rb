@@ -20,10 +20,8 @@ class Submission < ApplicationRecord
 
     puts "Annotation Data: #{annotations_data.inspect}"
     if annotations_data.is_a?(String) && annotations_data.start_with?('{')
-      # Convert Ruby hash syntax to JSON if needed
       if annotations_data.include?('=>')
         puts "Annotations Data is a string and starts with { and includes =>"
-        # Replace Ruby hash rocket with JSON colon
         json_string = annotations_data.gsub('=>', ':')
         puts "JSON String: #{json_string.inspect}"
         annotations = JSON.parse(json_string)
@@ -31,11 +29,9 @@ class Submission < ApplicationRecord
         puts "Annotations Data is a string and starts with { and does not include =>"
         annotations = JSON.parse(annotations_data)
       end
-    # Then, try handling as Ruby hash
     elsif annotations_data.is_a?(Hash)
       puts "Annotations Data is a hash"
       annotations = annotations_data
-    # Try evaluating as Ruby code if it's a string but not JSON
     elsif annotations_data.is_a?(String)
       puts "Annotations Data is a string and is not a hash or JSON"
       data = eval(annotations_data) rescue nil
@@ -78,14 +74,12 @@ class Submission < ApplicationRecord
         puts "Page: #{page.inspect}"
         canvas = page.canvas(type: :overlay)
         
-        # Set up the font before drawing text using the correct font configuration
         canvas.font('Helvetica', size: 12)
         
         canvas.text(type_field['value'], at: [type_field['position_x'], page.box(:media).height - type_field['position_y'] - 10])
       end
     end
 
-    # Create a new tempfile for the output PDF
     output_pdf = Tempfile.new(['output', '.pdf'])
     document.write(output_pdf.path, optimize: true)
     signed_pdf.attach(

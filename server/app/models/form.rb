@@ -15,25 +15,21 @@ class Form < ApplicationRecord
       downloaded_file = nil
       
       begin
-        # Download the file to a temporary location
         downloaded_file = Tempfile.new(['original', '.pdf'])
         downloaded_file.binmode
         downloaded_file.write(file.download)
         downloaded_file.rewind
         
-        # Load the PDF using the downloaded file
         pdf = CombinePDF.load(downloaded_file.path)
         component_pdf = CombinePDF.new
         
         Rails.logger.info "Extracting pages #{start_page} to #{end_page} from PDF with #{pdf.pages.length} pages"
         
-        # Validate page numbers
         if start_page > pdf.pages.length || end_page > pdf.pages.length
           Rails.logger.error "Invalid page range: #{start_page}-#{end_page} for PDF with #{pdf.pages.length} pages"
           return nil
         end
         
-        # Convert from 1-based to 0-based indexing for PDF pages
         ((start_page - 1)..(end_page - 1)).each do |i|
           if pdf.pages[i]
             component_pdf << pdf.pages[i]
@@ -42,7 +38,6 @@ class Form < ApplicationRecord
           end
         end
         
-        # Save the component PDF
         temp_file.binmode
         component_pdf.save(temp_file.path)
         

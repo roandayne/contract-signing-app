@@ -24,27 +24,23 @@ class Api::V1::SignaturesController < ApplicationController
 
     # POST /forms/:uuid/signatures
     def create
-      # Log the incoming parameters for debugging
       Rails.logger.info "Received signature fields: #{signature_params_array.inspect}"
 
       begin
-        # Delete existing signatures for this Form
         Signature.where(form_id: @form.id).destroy_all
 
-        # Create new signatures from the params
         signatures = signature_params_array.map do |field|
           Signature.create!(
             form_id: @form.id,
-            user_id: current_user.id,  # Assuming you have current_user method
+            user_id: current_user.id,
             signature_type: field[:type],
             position_x: field[:x],
             position_y: field[:y],
             page_number: field[:pageNum],
-            signature_data: nil  # This will be filled when user actually signs
+            signature_data: nil
           )
         end
         
-        # Return the created signatures
         render json: {
           signatures: signatures,
           message: 'Signature fields created successfully'
@@ -81,11 +77,9 @@ class Api::V1::SignaturesController < ApplicationController
         ActiveRecord::Base.transaction do
           Rails.logger.info "Received raw params: #{params.inspect}"
           
-          # Initialize empty arrays for signatures and type fields
           signatures_data = []
           type_fields_data = []
           
-          # Process signatures if present
           if sign_params[:signatures_attributes].present?
             sign_params[:signatures_attributes].each do |_key, sig|
               signature_hash = {
@@ -98,14 +92,12 @@ class Api::V1::SignaturesController < ApplicationController
                 "page_number" => sig[:page_number].to_i
               }
               
-              # Make sure page_number is an integer and not nil
               if signature_hash["page_number"].nil? || signature_hash["page_number"] <= 0
                 signature_hash["page_number"] = 1
               end
               
               signatures_data << signature_hash
               
-              # Update the current signature if it matches
               if sig[:field_id].to_s == params[:id].to_s
                 signature.update!(signature_data: sig[:signature_data])
                 Rails.logger.info "Updated signature with data for field_id: #{sig[:field_id]}"
@@ -113,7 +105,6 @@ class Api::V1::SignaturesController < ApplicationController
             end
           end
           
-          # Process type fields if present
           if sign_params[:type_fields_attributes].present?
             sign_params[:type_fields_attributes].each do |_key, field|
               field_hash = {
@@ -126,7 +117,6 @@ class Api::V1::SignaturesController < ApplicationController
                 "page_number" => field[:page_number].to_i
               }
               
-              # Make sure page_number is an integer and not nil
               if field_hash["page_number"].nil? || field_hash["page_number"] <= 0
                 field_hash["page_number"] = 1
               end
@@ -135,7 +125,6 @@ class Api::V1::SignaturesController < ApplicationController
             end
           end
           
-          # Create the annotations data hash and serialize it
           annotations_data = {
             "signatures" => signatures_data,
             "type_fields" => type_fields_data
@@ -154,16 +143,12 @@ class Api::V1::SignaturesController < ApplicationController
           
           Rails.logger.info "Created submission with ID: #{submission.id}"
           
-          # Attach the original PDF from the form and generate signed version
           if @form.file.attached?
             puts "Form file attached"
-            # Attach the original PDF
             submission.signed_pdf.attach(@form.file.blob)
             puts "PDF attached"
-            # Annotate the PDF
             submission.annotate_pdf
             puts "PDF annotated"
-            # Generate and save the signed PDF URL using rails_blob_url
             signed_pdf_url = Rails.application.routes.url_helpers.rails_blob_url(
               submission.signed_pdf,
               host: ENV['HOST_URL'] || 'localhost:3000',
@@ -209,7 +194,6 @@ class Api::V1::SignaturesController < ApplicationController
       # This expects an array of signature fields in the request body
       params.require(:signature_fields).map do |field|
         field.permit(:type, :x, :y, :pageNum).tap do |permitted_field|
-          # Convert frontend field type to backend signature_type if needed
           case permitted_field[:type]
           when 'signature'
             permitted_field[:type] = 'draw'

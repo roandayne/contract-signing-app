@@ -4,14 +4,12 @@ class Api::V1::SubmissionsController < ApplicationController
   skip_before_action :authorize_request, only: [:index, :download_component, :download_all_components]
   
   def index
-    # Get all submissions with their forms and components
     submissions = Submission.includes(:form => :form_components)
                           .where.not(signer_name: nil)
                           .order(created_at: :desc)
     
     puts "Submissions count: #{submissions.length}"
     
-    # Group submissions by form_id instead of form object
     grouped_submissions = submissions.group_by { |s| s.form_id }.map do |form_id, form_submissions|
       form = form_submissions.first.form
       puts "Processing form_id: #{form_id}"
@@ -25,7 +23,6 @@ class Api::V1::SubmissionsController < ApplicationController
         form: {
           uuid: form.uuid,
           file_name: form.file_name,
-          # Include full form component details with page information
           form_components: form.form_components.map do |component|
             {
               id: component.id,
@@ -45,7 +42,6 @@ class Api::V1::SubmissionsController < ApplicationController
             signed_pdf_url: submission.signed_pdf.attached? ? rails_storage_proxy_url(submission.signed_pdf) : nil,
             signed_pdf_download_url: submission.signed_pdf.attached? ? rails_storage_proxy_url(submission.signed_pdf, disposition: 'attachment') : nil,
             created_at: submission.created_at,
-            # Include annotations data which contains signature positions and page numbers
             annotations_data: submission.annotations_data
           }
         end
@@ -69,7 +65,6 @@ class Api::V1::SubmissionsController < ApplicationController
       submission = Submission.find(params[:submission_id])
       Rails.logger.info "Found submission with ID: #{submission.id}"
       
-      # Verify the submission belongs to this form
       unless submission.form_id == form.id
         Rails.logger.error "Submission does not belong to the specified form"
         return render json: { error: "Invalid submission for this form" }, status: :unprocessable_entity
@@ -87,7 +82,6 @@ class Api::V1::SubmissionsController < ApplicationController
       end_page = params[:end_page].to_i
       Rails.logger.info "Extracting pages #{start_page} to #{end_page}"
       
-      # Download the file content
       begin
         file_content = submission.signed_pdf.download
         Rails.logger.info "Successfully downloaded file content, size: #{file_content.size} bytes"
@@ -96,10 +90,8 @@ class Api::V1::SubmissionsController < ApplicationController
         return render json: { error: "Could not download file content" }, status: :unprocessable_entity
       end
       
-      # Use combine_pdf to extract specific pages
       begin
         require 'combine_pdf'
-        # Create a temporary file to handle the binary content properly
         require 'tempfile'
         temp_pdf = Tempfile.new(['temp_pdf', '.pdf'], binmode: true)
         begin
@@ -113,7 +105,6 @@ class Api::V1::SubmissionsController < ApplicationController
             return render json: { error: "Invalid page range requested" }, status: :unprocessable_entity
           end
           
-          # Extract specified pages (CombinePDF uses 0-based indexing)
           selected_pages = pdf.pages[start_page - 1..end_page - 1]
           Rails.logger.info "Selected #{selected_pages.length} pages"
           
@@ -125,17 +116,14 @@ class Api::V1::SubmissionsController < ApplicationController
           new_pdf = CombinePDF.new
           selected_pages.each { |page| new_pdf << page }
           
-          # Generate the PDF data
           pdf_data = new_pdf.to_pdf
           Rails.logger.info "Generated new PDF with #{new_pdf.pages.length} pages"
           
-          # Send the file with appropriate headers
           send_data pdf_data,
                     filename: component.original_filename,
                     type: 'application/pdf',
                     disposition: 'attachment'
         ensure
-          # Make sure we clean up the temporary file
           temp_pdf.close
           temp_pdf.unlink
         end
@@ -162,7 +150,6 @@ class Api::V1::SubmissionsController < ApplicationController
       submission = Submission.find(params[:submission_id])
       Rails.logger.info "Found submission with ID: #{submission.id}"
       
-      # Verify the submission belongs to this form
       unless submission.form_id == form.id
         Rails.logger.error "Submission does not belong to the specified form"
         return render json: { error: "Invalid submission for this form" }, status: :unprocessable_entity
@@ -173,7 +160,6 @@ class Api::V1::SubmissionsController < ApplicationController
         return render json: { error: "Signed PDF is not available" }, status: :unprocessable_entity
       end
       
-      # Download the file content
       begin
         file_content = submission.signed_pdf.download
         Rails.logger.info "Successfully downloaded file content, size: #{file_content.size} bytes"
@@ -182,10 +168,8 @@ class Api::V1::SubmissionsController < ApplicationController
         return render json: { error: "Could not download file content" }, status: :unprocessable_entity
       end
       
-      # Create a temporary directory for our files
       require 'tmpdir'
       Dir.mktmpdir do |temp_dir|
-        # Create a temporary file for the main PDF
         require 'tempfile'
         temp_pdf = Tempfile.new(['temp_pdf', '.pdf'], binmode: true)
         begin
@@ -194,7 +178,6 @@ class Api::V1::SubmissionsController < ApplicationController
           pdf = CombinePDF.load(temp_pdf.path)
           Rails.logger.info "Loaded PDF with #{pdf.pages.length} pages"
           
-          # Create a zip file
           require 'zip'
           zip_file_path = File.join(temp_dir, "#{form.file_name}_components.zip")
           
@@ -202,23 +185,18 @@ class Api::V1::SubmissionsController < ApplicationController
             form.form_components.each do |component|
               Rails.logger.info "Processing component #{component.id}: pages #{component.start_page} to #{component.end_page}"
               
-              # Extract pages for this component
               selected_pages = pdf.pages[component.start_page - 1..component.end_page - 1]
               
-              # Create new PDF with selected pages
               new_pdf = CombinePDF.new
               selected_pages.each { |page| new_pdf << page }
               
-              # Create a temporary file for this component
               component_pdf_path = File.join(temp_dir, "signed_#{component.original_filename}")
               File.binwrite(component_pdf_path, new_pdf.to_pdf)
               
-              # Add to zip file
               zipfile.add("signed_#{component.original_filename}", component_pdf_path)
             end
           end
           
-          # Send the zip file
           zip_data = File.binread(zip_file_path)
           send_data zip_data,
                     filename: "signed_#{form.file_name}_components.zip",

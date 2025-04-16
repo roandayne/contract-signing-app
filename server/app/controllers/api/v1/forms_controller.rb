@@ -54,7 +54,6 @@ class Api::V1::FormsController < ApplicationController
             pdf_content = CombinePDF.parse(uploaded_file.read)
             page_count = pdf_content.pages.length
             
-            # Store component information with 1-based page numbers
             form_components << {
               original_filename: uploaded_file.original_filename,
               page_count: page_count,
@@ -90,12 +89,10 @@ class Api::V1::FormsController < ApplicationController
           Rails.logger.debug "Form attributes before save: #{form.attributes.inspect}"
 
           if form.save
-            # Create form components
             form_components.each do |component|
               form.form_components.create!(component)
             end
             
-            # Generate the URL based on the environment
             file_url = if Rails.env.development?
               Rails.application.routes.url_helpers.rails_blob_path(form.file, only_path: true)
             else
@@ -111,14 +108,13 @@ class Api::V1::FormsController < ApplicationController
             }, status: :created
           else
             Rails.logger.error "Form save errors: #{form.errors.full_messages}"
-            form.file.purge # Clean up the attached file if form save fails
+            form.file.purge
             render json: { errors: form.errors.full_messages }, status: :unprocessable_entity
           end
         rescue => e
           Rails.logger.error "Error in form creation: #{e.message}"
           render json: { error: "Failed to process file upload: #{e.message}" }, status: :internal_server_error
         ensure
-          # Clean up temporary file
           temp_file&.close
           temp_file&.unlink
         end
@@ -166,7 +162,6 @@ class Api::V1::FormsController < ApplicationController
         return
       end
 
-      # Generate signing link using UUID
       signing_link = "#{ENV['CLIENT_URL']}/sign/#{@form.uuid}"
 
       if @form.update(signing_link: signing_link)
