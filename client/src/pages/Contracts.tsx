@@ -263,40 +263,6 @@ const Contracts = () => {
         ),
     },
     {
-      field: 'components',
-      headerName: 'Components',
-      flex: 2,
-      minWidth: 300,
-      renderCell: (params) => (
-        <Box sx={{ width: '100%' }}>
-          <Collapse in={expandedRows[params.row.uuid]} timeout="auto" unmountOnExit>
-            <Stack spacing={1} sx={{ p: 1 }}>
-              {params.row.form_components?.map((component: FormComponent) => (
-                <Stack
-                  key={component.id}
-                  direction="row"
-                  spacing={2}
-                  alignItems="center"
-                  sx={{ backgroundColor: 'background.paper', p: 1, borderRadius: 1 }}
-                >
-                  <Typography variant="body2" sx={{ flex: 1 }}>
-                    {component.original_filename} ({component.page_count} pages)
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleDownloadComponent(params.row.uuid, component.id, component.original_filename)}
-                  >
-                    Download
-                  </Button>
-                </Stack>
-              ))}
-            </Stack>
-          </Collapse>
-        </Box>
-      ),
-    },
-    {
       field: 'actions',
       headerName: 'Actions',
       flex: 1,
@@ -368,17 +334,6 @@ const Contracts = () => {
         columns={columns(handleDownload, handleAddSignatureFields, handleGenerateLink)}
         rows={data}
       />
-
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-          showFirstButton
-          showLastButton
-        />
-      </Box>
 
       <DragNDropPDF
         files={files}

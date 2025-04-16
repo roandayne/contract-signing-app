@@ -32,7 +32,7 @@ const Authenticated: React.FC<{ children: React.ReactNode }> = ({
   return (
     <Box sx={{ display: 'flex', width: '100vw' }}>
       <Sidebar />
-      <Box>{children}</Box>
+      <Box sx={{ marginTop: "64px" }}>{children}</Box>
     </Box>
   );
 };
