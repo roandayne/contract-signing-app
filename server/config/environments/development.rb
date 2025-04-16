@@ -82,11 +82,11 @@ Rails.application.configure do
   # Allow requests from any origin in development
   config.middleware.insert_before 0, Rack::Cors do
     allow do
-      origins '*'
+      origins 'http://localhost:5173'
       resource '*',
         headers: :any,
         methods: [:get, :post, :put, :patch, :delete, :options, :head],
-        expose: ['Authorization']
+        expose: ['access-token', 'expiry', 'token-type', 'uid', 'client']
     end
   end
 end

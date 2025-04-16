@@ -87,11 +87,5 @@ Rails.application.configure do
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
-  # Enable CORS headers when responding to requests
-  config.action_dispatch.default_headers = {
-    'Access-Control-Allow-Origin' => 'https://ceo-sidekicks-contract-signing.netlify.app',
-    'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Credentials' => 'true',
-    'Access-Control-Allow-Headers' => 'Origin, Content-Type, Accept, Authorization, X-Requested-With'
-  }
+  # Remove conflicting CORS configuration as it's handled in initializers/cors.rb
 end

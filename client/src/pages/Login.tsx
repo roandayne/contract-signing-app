@@ -15,6 +15,7 @@ import Image from '../assets/images/login.jpg';
 import { GoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
+import { LoginOutlined } from '@mui/icons-material';
 
 const validationSchema = yup.object({
   email: yup
@@ -59,12 +60,30 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       setIsGoogleLoading(true);
-      await axiosInstance.post('/api/v1/google-login', {
-        credential: credentialResponse.credential,
-      });
+      await axiosInstance.post('/api/v1/google-login', 
+        {
+          credential: credentialResponse.credential,
+        }
+      );
       navigate('/dashboard');
-    } catch (error) {
-      alert(error);
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+        alert(`Login failed: ${error.response.data.error || 'Unknown error'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        alert('No response received from server');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        alert(`Error: ${error.message}`);
+      }
     } finally {
       setIsGoogleLoading(false);
     }
@@ -181,6 +200,7 @@ const Login = () => {
           <LoadingButton
             loading={isLoading}
             loadingPosition="start"
+            startIcon={<LoginOutlined />}
             type="submit"
             variant="contained"
             sx={{ borderRadius: '24px' }}
