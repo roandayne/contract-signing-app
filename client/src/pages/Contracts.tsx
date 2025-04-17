@@ -7,8 +7,6 @@ import {
   Typography,
   TextField,
   IconButton,
-  Pagination,
-  Collapse,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -20,6 +18,7 @@ import DragNDropPDF from '../components/Contracts/DragNDropPDF';
 import Table from '../components/CustomMui/Table';
 import { ContractEditor } from '../components/Contracts/ContractEditor';
 import axios from 'axios';
+import { useNotification } from '../context/NotificationContext';
 
 type FormComponent = {
   id: number;
@@ -51,7 +50,6 @@ const shortenLink = (longUrl: string, callback: (shortUrl: string) => void) => {
 const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [rowsPerPage] = useState(10);
   const [shortenedUrls, setShortenedUrls] = useState<Record<string, string>>({});
   const [_formUrl, setFormUrl] = useState<string>();
@@ -65,8 +63,7 @@ const Contracts = () => {
   const [isSignatureEditorOpen, setIsSignatureEditorOpen] = useState(false);
   const [publicLink, setPublicLink] = useState<string>('');
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { showNotification } = useNotification();
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -82,7 +79,6 @@ const Contracts = () => {
         }
       });
       setData(response.data.forms);
-      setTotalPages(response.data.pagination.total_pages);
     } catch (error) {
       console.error('Error fetching contracts:', error);
     }
@@ -111,10 +107,9 @@ const Contracts = () => {
         item.uuid === formUuid ? { ...item, signing_link: publicLink } : item
       ));
 
-      setSuccessMessage('Public link generated successfully!');
+      showNotification('Public link generated successfully!', 'success');
     } catch (error) {
-      console.error('Error generating public link:', error);
-      setError('Failed to generate public link');
+      showNotification('Failed to generate public link', 'error');
     }
   };
 
@@ -134,7 +129,7 @@ const Contracts = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      alert(response.data.message);
+      showNotification(response.data.message, 'success');
       setFormUrl(response.data.form.file_url);
       setIsOpen(false);
       setFiles([]);
@@ -147,29 +142,9 @@ const Contracts = () => {
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
-      alert(error.response?.data?.error || 'Failed to upload files');
+      showNotification(error.response?.data?.error || 'Failed to upload files', 'error');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleDownloadComponent = async (formUuid: string, componentId: number, filename: string) => {
-    try {
-      const response = await axiosInstance.get(`/api/v1/forms/${formUuid}/components/${componentId}/download`, {
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading component:', error);
-      alert('Failed to download component');
     }
   };
 
@@ -301,10 +276,6 @@ const Contracts = () => {
     },
   ];
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value);
-  };
-
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -412,7 +383,7 @@ const Contracts = () => {
               variant="contained"
               onClick={() => {
                 navigator.clipboard.writeText(publicLink);
-                alert('Link copied to clipboard!');
+                showNotification('Link copied to clipboard!', 'success');
               }}
             >
               Copy

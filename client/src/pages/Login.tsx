@@ -18,6 +18,7 @@ import { LoadingButton } from '@mui/lab';
 import { LoginOutlined } from '@mui/icons-material';
 import { useAppDispatch } from '../redux/hooks';
 import { setUser } from '../redux/features/user/userSlice';
+import { useNotification } from '../context/NotificationContext';
 
 const validationSchema = yup.object({
   email: yup
@@ -40,6 +41,7 @@ const Login = () => {
   const dispatch = useAppDispatch();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { showNotification } = useNotification();
   const {
     register,
     handleSubmit,
@@ -55,9 +57,9 @@ const Login = () => {
       dispatch(setUser(response.data.user));
       setIsLoading(false);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       setIsLoading(false);
-      alert(error);
+      showNotification(error.response?.data?.error || 'Login failed', 'error');
     }
   };
 
@@ -67,22 +69,16 @@ const Login = () => {
       const response = await axiosInstance.post('/api/v1/google-login', {
         credential: credentialResponse.credential,
       });
-      console.log(response.data);
       dispatch(setUser(response.data.user));
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Google login error:', error);
       if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-        alert(`Login failed: ${error.response.data.error || 'Unknown error'}`);
+        showNotification(error.response.data.error || 'Login failed', 'error');
       } else if (error.request) {
-        console.error('No response received:', error.request);
-        alert('No response received from server');
+        showNotification('No response received from server', 'error');
       } else {
-        console.error('Error setting up request:', error.message);
-        alert(`Error: ${error.message}`);
+        showNotification(`Error: ${error.message}`, 'error');
       }
     } finally {
       setIsGoogleLoading(false);

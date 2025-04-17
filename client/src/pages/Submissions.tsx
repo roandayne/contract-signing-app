@@ -1,10 +1,11 @@
-import { Box, Button, Stack, Typography, Card, CardContent } from '@mui/material';
+import { Box, Button, Typography, Card, CardContent } from '@mui/material';
 import { GridColDef } from '@mui/x-data-grid';
 import { useState, useEffect } from 'react';
 import Table from '../components/CustomMui/Table';
 import axiosInstance from '../axiosInstance';
 import DownloadIcon from '@mui/icons-material/Download';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { useNotification } from '../context/NotificationContext';
 
 type FormComponent = {
   id: number;
@@ -43,6 +44,7 @@ const SubmissionTable = ({
   submissions: Submission[];
   onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number, submissionId: number) => void;
 }) => {
+  const { showNotification } = useNotification();
   const handleDownloadAll = async (submissionId: number) => {
     try {
       const response = await axiosInstance.get(
@@ -66,11 +68,11 @@ const SubmissionTable = ({
     } catch (error: any) {
       console.error('Error downloading all components:', error);
       if (error.response) {
-        alert(`Failed to download components: ${error.response.data.error || 'Unknown error'}`);
+        showNotification(`Failed to download components: ${error.response.data.error || 'Unknown error'}`, 'error');
       } else if (error.request) {
-        alert('Failed to download components: No response from server');
+        showNotification('Failed to download components: No response from server', 'error');
       } else {
-        alert(`Failed to download components: ${error.message}`);
+        showNotification(`Failed to download components: ${error.message}`, 'error');
       }
     }
   };
@@ -151,7 +153,7 @@ const SubmissionTable = ({
 
 const Submissions = () => {
   const [groupedSubmissions, setGroupedSubmissions] = useState<GroupedSubmission[]>([]);
-
+  const { showNotification } = useNotification();
   useEffect(() => {
     fetchSubmissions();
   }, []);
@@ -160,8 +162,8 @@ const Submissions = () => {
     try {
       const response = await axiosInstance.get('/api/v1/submissions');
       setGroupedSubmissions(response.data.grouped_submissions);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
+    } catch (error: any) {
+      showNotification(error.response?.data?.error || 'Failed to fetch submissions', 'error');
     }
   };
 
@@ -193,15 +195,11 @@ const Submissions = () => {
     } catch (error: any) {
       console.error('Error downloading component:', error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        alert(`Failed to download component: ${error.response.data.error || 'Unknown error'}`);
+        showNotification(`Failed to download component: ${error.response.data.error || 'Unknown error'}`, 'error');
       } else if (error.request) {
-        // The request was made but no response was received
-        alert('Failed to download component: No response from server');
+        showNotification('Failed to download component: No response from server', 'error');
       } else {
-        // Something happened in setting up the request that triggered an Error
-        alert(`Failed to download component: ${error.message}`);
+        showNotification(`Failed to download component: ${error.message}`, 'error');
       }
     }
   };

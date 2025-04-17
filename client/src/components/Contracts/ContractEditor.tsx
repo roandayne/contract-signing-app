@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Snackbar, Alert } from '@mui/material';
+import { Box } from '@mui/material';
 import { SignatureFieldEditor } from './SignatureFieldEditor';
 import type { SignatureField } from './SignatureFieldEditor';
-import axios from 'axios';
 import axiosInstance from '../../axiosInstance';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ContractEditorProps {
   pdfUrl: string;
@@ -41,10 +41,10 @@ const convertSignatureToField = (signature: Signature): SignatureField => {
 
   return {
     id: signature.id,
-    pageNum: signature.page_number, // You might need to add page_number to your signature model
+    pageNum: signature.page_number,
     x: signature.position_x,
     y: signature.position_y,
-    width: type === 'initial' ? 100 : 200, // Use the same dimensions as in SignatureFieldEditor
+    width: type === 'initial' ? 100 : 200,
     height: type === 'name' || type === 'date' ? 20 : 20,
     type,
   };
@@ -52,9 +52,8 @@ const convertSignatureToField = (signature: Signature): SignatureField => {
 
 export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid, fetchContracts }) => {
   const [fields, setFields] = useState<SignatureField[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [_isLoading, setIsLoading] = useState(false);
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     const loadSignatureFields = async () => {
@@ -72,7 +71,7 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid
         setFields(convertedFields);
       } catch (error) {
         console.error('Error loading signature fields:', error);
-        setError('Failed to load existing signature fields');
+        showNotification('Failed to load existing signature fields', 'error');
       } finally {
         setIsLoading(false);
       }
@@ -84,7 +83,6 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid
   const handleSaveFields = async (updatedFields: SignatureField[]) => {
     try {
       setIsLoading(true);
-      setError(null);
 
       const response = await axiosInstance.post(`/api/v1/forms/${formUuid}/signatures`, {
         signature_fields: updatedFields
@@ -98,18 +96,12 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid
         };
       });
       setFields(convertedFields);
-      setSuccessMessage('Signature fields saved successfully');
+      showNotification('Signature fields saved successfully', 'success');
     } catch (error) {
-      console.error('Error saving signature fields:', error);
-      setError('Failed to save signature fields');
+      showNotification('Failed to save signature fields', 'error');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCloseSnackbar = () => {
-    setError(null);
-    setSuccessMessage(null);
   };
 
   return (
@@ -121,28 +113,6 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid
         onSave={handleSaveFields}
         initialFields={fields}
       />
-      
-      <Snackbar 
-        open={!!error} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity="error">
-          {error}
-        </Alert>
-      </Snackbar>
-
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity="success">
-          {successMessage}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }; 

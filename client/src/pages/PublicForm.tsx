@@ -16,8 +16,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import axios from 'axios';
+import { useNotification } from '../context/NotificationContext';
 
-// Create a separate axios instance for public endpoints
 const publicAxios = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
@@ -81,9 +81,8 @@ const PublicForm = () => {
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const sigPadRefs = useRef<SignatureCanvas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
-
+  const { showNotification, hasError, setHasError } = useNotification();
   const { register, handleSubmit, formState: { errors } } = useForm<SignerFormData>({
     resolver: yupResolver(validationSchema),
   });
@@ -94,22 +93,22 @@ const PublicForm = () => {
 
   const fetchFormData = async () => {
     setIsLoading(true);
-    setError(null);
+
     try {
       if (!formId) {
         throw new Error('Form ID is required');
       }
       const response = await publicAxios.get(`/api/v1/forms/${formId}`);
       if (!response.data || !response.data.form) {
-        throw new Error('Invalid form data received');
+        setHasError(true);
+        showNotification('Invalid form data received', 'error');
       }
-      console.log('Form data response:', response.data);
+
       setFormData(response.data.form);
       setFields(response.data.signature_fields || []);
-      console.log('Fields after setting:', response.data.signature_fields);
     } catch (error: any) {
-      console.error('Error fetching form:', error);
-      setError(error.message || 'Failed to load form data');
+      setHasError(true);
+      showNotification(error.message || 'Failed to load form data', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -122,8 +121,7 @@ console.log(sigPadRefs.current)
     setPdfError(null);
   };
 
-  const handleDocumentLoadError = (error: Error) => {
-    console.error('Error loading PDF:', error);
+  const handleDocumentLoadError = () => {
     setPdfError('Failed to load PDF document. Please try again later.');
   };
 
@@ -135,7 +133,6 @@ console.log(sigPadRefs.current)
   const handleSignaturePadRef = useCallback((ref: SignatureCanvas | null) => {
     if (ref && ref._canvas) {
       sigPadRefs.current = ref;
-      // Add event listener for drawing
       ref._canvas.addEventListener("mouseup", () => {
         setHasSignature(!ref.isEmpty());
       });
@@ -325,19 +322,16 @@ console.log(sigPadRefs.current)
 
   const handleSubmitForm = async (signerData: SignerFormData) => {
     try {
-      // Ensure currentFieldId is set if empty by using the first available field
       if (!currentFieldId && fields.length > 0) {
         setCurrentFieldId(fields[0].id.toString());
       }
       
       console.log('Submitting form with currentFieldId:', currentFieldId);
 
-      // Create form data
       const formData = new FormData();
       formData.append('signature[signer_name]', signerData.signerName);
       formData.append('signature[signer_email]', signerData.signerEmail);
 
-      // Add signatures
       Object.entries(signatures).forEach(([fieldId, signatureData], index) => {
         const field = fields.find(f => f.id.toString() === fieldId);
         formData.append(`signature[signatures_attributes][${index}][field_id]`, fieldId);
@@ -349,7 +343,6 @@ console.log(sigPadRefs.current)
         formData.append(`signature[signatures_attributes][${index}][page_number]`, (field?.page_number || 1).toString());
       });
 
-      // Add type fields
       Object.entries(formValues).forEach(([fieldId, value], index) => {
         const field = fields.find(f => f.id.toString() === fieldId);
         if (field) {
@@ -363,30 +356,24 @@ console.log(sigPadRefs.current)
         }
       });
 
-      // Log the form data for debugging
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
 
-      // Send the data
       const response = await publicAxios.post(
         `/api/v1/forms/${formId}/signatures/${currentFieldId}/sign`,
         formData
       );
       
-      console.log('Response:', response.data);
-      
-      // Save the signed PDF URL
       if (response.data.signed_pdf_url) {
         setSignedPdfUrl(response.data.signed_pdf_url);
-        alert('Form submitted successfully! You can now download your signed document.');
+        showNotification('Form submitted successfully! You can now download your signed document.', 'success');
       } else {
         throw new Error('No signed PDF URL received');
       }
     } catch (error: any) {
-      console.error('Error submitting form:', error);
-      console.error('Error details:', error.response?.data);
-      alert(`Failed to submit form: ${error.response?.data?.details || error.message}`);
+      setHasError(true);
+      showNotification(`Failed to submit form: ${error.response?.data?.details || error.message}`, 'error');
     }
   };
 
@@ -398,10 +385,10 @@ console.log(sigPadRefs.current)
     );
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography color="error">{error}</Typography>
+        <Typography color="error">Something went wrong</Typography>
         <Button onClick={fetchFormData} sx={{ mt: 2 }}>
           Retry
         </Button>

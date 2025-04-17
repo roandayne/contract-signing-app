@@ -1,4 +1,4 @@
-import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, IconButton, Paper, Button, TextField } from '@mui/material';
+import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography, IconButton, Paper, Button } from '@mui/material';
 import React, { useRef, useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -60,7 +60,6 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   const [activeDragId, setActiveDragId] = useState<number | null>(null);
 
   useEffect(() => {
-    console.log("initialFields", initialFields)
     if (initialFields.length > 0) {
       setSignatureFields(initialFields);
     }
@@ -109,7 +108,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
 
   const handleDeleteField = async (id: number) => {
     const field = signatureFields.find(field => field.id === id);
-    console.log("meow", signatureFields, id, field)
+    
     if (!field?.id) return;
 
     if (!field.isSaved) {
@@ -120,7 +119,6 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
     }
 
     try {
-      console.log("here???")
       await axiosInstance.delete(`/api/v1/forms/${formUuid}/signatures/${id}`);
       const newFields = signatureFields.filter(field => field.id !== id);
       setSignatureFields(newFields);
@@ -139,7 +137,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
   };
 
   const handleFieldTypeChange = (
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newFieldType: FieldType | null
   ) => {
     if (newFieldType !== null) {
@@ -176,7 +174,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
     });
   };
 
-  const handleDragStop: DraggableEventHandler = (e, data: DraggableData) => {
+  const handleDragStop: DraggableEventHandler = (_e, data: DraggableData) => {
     if (!containerRef.current || !activeDragId) return;
 
     const newFields = signatureFields.map(field => {
@@ -374,7 +372,7 @@ export const SignatureFieldEditor: React.FC<SignatureFieldEditorProps> = ({
                       <IconButton
                         className="delete-button"
                         size="small"
-                        onClick={(e) => {
+                        onClick={() => {
                           handleDeleteField(field.id);
                         }}
                         sx={{

@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
 import { useAppDispatch } from '../redux/hooks';
 import { setUser } from '../redux/features/user/userSlice';
+import { useNotification } from '../context/NotificationContext';
 
 const validationSchema = yup.object({
   email: yup
@@ -48,6 +49,7 @@ const Register = () => {
   const dispatch = useAppDispatch();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { showNotification } = useNotification()
   const {
     register,
     handleSubmit,
@@ -64,10 +66,10 @@ const Register = () => {
         password: data.password,
       });
       setIsLoading(false);
-      alert(response.data.message);
-    } catch (error) {
+      showNotification(response.data.message, 'success');
+    } catch (error: any) {
       setIsLoading(false);
-      alert(error);
+      showNotification(error.response?.data?.error || 'Register failed', 'error');
     }
   };
 
@@ -80,9 +82,9 @@ const Register = () => {
       dispatch(setUser(response.data.user));
       setIsGoogleLoading(false);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       setIsGoogleLoading(false);
-      alert(error);
+      showNotification(error.response?.data?.error || 'Register failed', 'error');
     }
   };
 
