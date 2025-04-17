@@ -4,7 +4,7 @@ class Api::V1::FormsController < ApplicationController
     require 'tempfile'
     require 'zip'
     
-    before_action :set_form, only: [:show, :generate_link, :download_component, :download_all_components]
+    before_action :set_form, only: [:show, :generate_link, :download_component, :download_all_components, :update_filename]
     skip_before_action :authorize_request, only: [:show]
     
     def signature_fields
@@ -194,6 +194,14 @@ class Api::V1::FormsController < ApplicationController
       ensure
         temp_zip&.close
         temp_zip&.unlink if temp_zip
+      end
+    end
+
+    def update_filename
+      if @form.update(file_name: params[:file_name])
+        render json: { message: "File name updated successfully", form: @form }
+      else
+        render json: { error: "Failed to update file name" }, status: :unprocessable_entity
       end
     end
 

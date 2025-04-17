@@ -43,6 +43,7 @@ Rails.application.routes.draw do
         member do
           get :signature_fields
           post :generate_link
+          patch :update_filename
           get 'components/:component_id/download', to: 'forms#download_component'
           get 'components/download_all', to: 'forms#download_all_components'
         end

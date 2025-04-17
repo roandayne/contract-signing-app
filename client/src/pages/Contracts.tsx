@@ -9,14 +9,13 @@ import {
   IconButton,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
 import DragNDropPDF from '../components/Contracts/DragNDropPDF';
 import Table from '../components/CustomMui/Table';
 import { ContractEditor } from '../components/Contracts/ContractEditor';
+import EditableFileName from '../components/EditableFileName';
 import axios from 'axios';
 import { useNotification } from '../context/NotificationContext';
 
@@ -65,7 +64,6 @@ const Contracts = () => {
   const [publicLink, setPublicLink] = useState<string>('');
   const [isPublicLinkModalOpen, setIsPublicLinkModalOpen] = useState(false);
   const { showNotification } = useNotification();
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchContracts();
@@ -155,11 +153,10 @@ const Contracts = () => {
     }
   };
 
-  const handleToggleExpand = (uuid: string) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [uuid]: !prev[uuid]
-    }));
+  const handleFileNameUpdate = (uuid: string, newFileName: string) => {
+    setData(prevData => prevData.map(item => 
+      item.uuid === uuid ? { ...item, file_name: newFileName } : item
+    ));
   };
 
   const columns = (
@@ -168,23 +165,18 @@ const Contracts = () => {
     handleGenerateLink: (formUuid: string) => void
   ): GridColDef[] => [
     {
-      field: 'expand',
-      headerName: '',
-      width: 50,
-      renderCell: (params) => (
-        <IconButton
-          onClick={() => handleToggleExpand(params.row.uuid)}
-        >
-          {expandedRows[params.row.uuid] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-        </IconButton>
-      ),
-    },
-    {
       field: 'file_name',
       headerName: 'Contract Name',
       flex: 1,
-      minWidth: 150,
+      minWidth: 250,
       editable: false,
+      renderCell: (params) => (
+        <EditableFileName
+          fileName={params.value}
+          formUuid={params.row.uuid}
+          onUpdate={(newFileName) => handleFileNameUpdate(params.row.uuid, newFileName)}
+        />
+      ),
     },
     {
       field: 'signing_link',
