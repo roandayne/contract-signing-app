@@ -45,6 +45,9 @@ const SubmissionTable = ({
   onDownloadComponent: (formUuid: string, componentId: number, filename: string, startPage: number, endPage: number, submissionId: number) => void;
 }) => {
   const { showNotification } = useNotification();
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
   const handleDownloadAll = async (submissionId: number) => {
     try {
       const response = await axiosInstance.get(
@@ -144,7 +147,11 @@ const SubmissionTable = ({
               ...acc,
               [`component_${component.id}`]: component.original_filename,
             }), {}),
-          }))} 
+          }))}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={(model) => setPage(model.page)}
+          totalRows={submissions.length}
         />
       </CardContent>
     </Card>
