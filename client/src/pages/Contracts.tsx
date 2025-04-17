@@ -11,7 +11,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { GridColDef } from '@mui/x-data-grid';
+import { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
 import DragNDropPDF from '../components/Contracts/DragNDropPDF';
@@ -51,6 +51,7 @@ const Contracts = () => {
   const [data, setData] = useState<DataType[]>([]);
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(10);
+  const [totalRows, setTotalRows] = useState(0);
   const [shortenedUrls, setShortenedUrls] = useState<Record<string, string>>({});
   const [_formUrl, setFormUrl] = useState<string>();
   const [isOpen, setIsOpen] = useState(false);
@@ -79,9 +80,15 @@ const Contracts = () => {
         }
       });
       setData(response.data.forms);
+      setTotalRows(response.data.pagination.total_count);
     } catch (error) {
-      console.error('Error fetching contracts:', error);
+      showNotification('Failed to fetch contracts', 'error');
     }
+  };
+
+  const handlePaginationChange = (model: GridPaginationModel) => {
+    console.log('Pagination changed:', model);
+    setPage(model.page + 1);
   };
 
   const handleRemoveFile = (fileToRemove: File) => {
@@ -304,6 +311,10 @@ const Contracts = () => {
       <Table
         columns={columns(handleDownload, handleAddSignatureFields, handleGenerateLink)}
         rows={data}
+        page={page}
+        onPageChange={handlePaginationChange}
+        totalRows={totalRows}
+        pageSize={rowsPerPage}
       />
 
       <DragNDropPDF
