@@ -145,6 +145,8 @@ const Contracts = () => {
           response.data.form.file_url
         );
       }
+
+      fetchContracts();
     } catch (error: any) {
       console.error('Error uploading files:', error);
       showNotification(error.response?.data?.error || 'Failed to upload files', 'error');
@@ -342,7 +344,6 @@ const Contracts = () => {
         >
           {selectedPdf && (
             <ContractEditor
-              fetchContracts={fetchContracts}
               pdfUrl={`${import.meta.env.VITE_API_URL}${selectedPdf.url}`}
               formUuid={selectedPdf.uuid}
             />

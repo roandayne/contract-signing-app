@@ -8,7 +8,6 @@ import { useNotification } from '../../context/NotificationContext';
 interface ContractEditorProps {
   pdfUrl: string;
   formUuid: string;
-  fetchContracts: () => void;
 }
 
 type Signature = {
@@ -50,7 +49,7 @@ const convertSignatureToField = (signature: Signature): SignatureField => {
   };
 };
 
-export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid, fetchContracts }) => {
+export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid }) => {
   const [fields, setFields] = useState<SignatureField[]>([]);
   const [_isLoading, setIsLoading] = useState(false);
   const { showNotification } = useNotification();
@@ -107,7 +106,6 @@ export const ContractEditor: React.FC<ContractEditorProps> = ({ pdfUrl, formUuid
   return (
     <Box>
       <SignatureFieldEditor
-        fetchContracts={fetchContracts}
         pdfUrl={pdfUrl}
         formUuid={formUuid}
         onSave={handleSaveFields}
